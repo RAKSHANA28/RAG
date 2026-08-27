@@ -1,0 +1,56 @@
+# AQU-MR Configuration
+# Adaptive Query Understanding and Modality-Aware Retrieval for Multimodal Document QA
+
+project:
+  name: "AQU-MR"
+  version: "1.0.0"
+  description: "Adaptive Query Understanding & Modality-Aware Retrieval for Multimodal Document QA"
+
+ingestion:
+  max_image_dimension: 2048
+  thumbnail_size: [512, 512]
+  chunk_size: 350
+  chunk_overlap: 75
+  ocr_engine: "auto"  # "auto", "tesseract", "native", "mock"
+  table_extraction: "structured" # "structured", "heuristic", "ocr_fallback"
+
+retrieval:
+  top_k_pages: 3
+  top_k_chunks: 5
+  top_k_tables: 3
+  top_k_images: 3
+  evidence_budget_chars: 4000
+  bm25_weight: 0.5
+  dense_weight: 0.5
+  default_modality_weights:
+    text: 0.40
+    table: 0.35
+    image: 0.25
+  fusion_method: "soft_weighted"  # "soft_weighted", "rrf"
+  similarity_threshold: 0.15
+
+generation:
+  model_provider: "auto" # "gemini", "openai", "groq", "extractive", "auto"
+  model_name: "gemini-2.0-flash"
+  temperature: 0.0
+  max_output_tokens: 512
+  zero_hallucination_mode: true
+  extractive_fallback: true
+
+validation:
+  enable_validation: true
+  max_regeneration_attempts: 1
+  min_grounding_score: 0.65
+  abstention_message: "I am unable to answer based strictly on the provided document evidence."
+  check_numerical_precision: true
+  check_table_provenance: true
+  check_entity_support: true
+
+evaluation:
+  benchmark_name: "DocVQA-2026"
+  anls_threshold: 0.5
+  supported_modalities:
+    - "text"
+    - "table"
+    - "visual"
+    - "multimodal"

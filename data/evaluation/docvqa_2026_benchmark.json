@@ -1,0 +1,217 @@
+{
+  "dataset": "VLR-CVC/DocVQA-2026",
+  "version": "1.0",
+  "samples": [
+    {
+      "question_id": "q101",
+      "doc_id": "fin_report_2025",
+      "page_images": [
+        "data/evaluation/sample_images/doc1_page1.png",
+        "data/evaluation/sample_images/doc1_page2.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - Q3 2025 FINANCIAL PERFORMANCE\n\n1. Executive Summary:\nApex Global demonstrated resilient operational growth across global software verticals.\nCloud subscription margins expanded by 340 basis points year-over-year.\n\nTable 1: Quarterly Financial Summary (USD Billions)\n| Quarter | Revenue | Operating Income | Net Margin |\n|---|---|---|---|\n| Q1 2025 | $3.95B | $1.12B | 28.3% |\n| Q2 2025 | $4.21B | $1.25B | 29.7% |\n| Q3 2025 | $4.82B | $1.48B | 30.7% |\n| Q4 2024 | $3.80B | $1.05B | 27.6% |\n",
+          "words": []
+        },
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - GOVERNANCE & AUDIT\n\n2. Independent Auditor Opinion:\nThe consolidated statements present fairly in all material respects the financial position.\nApproved by the Board of Directors on October 24, 2025.\n\n\u2605 OFFICIAL CORPORATE SEAL \u2605\nApex Global Enterprises\nStatus: Verified & Validated\n\nExecutive Sign-Off:\nMarcus Vance\nChief Financial Officer, Apex Global\nElena Rostova\nChief Executive Officer, Apex Global\n",
+          "words": []
+        }
+      ],
+      "question": "What was the total revenue in Q3 2025?",
+      "answers": [
+        "$4.82B",
+        "4.82B",
+        "4.82 billion",
+        "$4.82 billion"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP"
+    },
+    {
+      "question_id": "q102",
+      "doc_id": "fin_report_2025",
+      "page_images": [
+        "data/evaluation/sample_images/doc1_page1.png",
+        "data/evaluation/sample_images/doc1_page2.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - Q3 2025 FINANCIAL PERFORMANCE\n\n1. Executive Summary:\nApex Global demonstrated resilient operational growth across global software verticals.\nCloud subscription margins expanded by 340 basis points year-over-year.\n\nTable 1: Quarterly Financial Summary (USD Billions)\n| Quarter | Revenue | Operating Income | Net Margin |\n|---|---|---|---|\n| Q1 2025 | $3.95B | $1.12B | 28.3% |\n| Q2 2025 | $4.21B | $1.25B | 29.7% |\n| Q3 2025 | $4.82B | $1.48B | 30.7% |\n| Q4 2024 | $3.80B | $1.05B | 27.6% |\n",
+          "words": []
+        },
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - GOVERNANCE & AUDIT\n\n2. Independent Auditor Opinion:\nThe consolidated statements present fairly in all material respects the financial position.\nApproved by the Board of Directors on October 24, 2025.\n\n\u2605 OFFICIAL CORPORATE SEAL \u2605\nApex Global Enterprises\nStatus: Verified & Validated\n\nExecutive Sign-Off:\nMarcus Vance\nChief Financial Officer, Apex Global\nElena Rostova\nChief Executive Officer, Apex Global\n",
+          "words": []
+        }
+      ],
+      "question": "Who is the Chief Financial Officer who signed the audit report?",
+      "answers": [
+        "Marcus Vance",
+        "Marcus Vance, CFO",
+        "Vance"
+      ],
+      "modality": "text",
+      "gold_pages": [
+        2
+      ],
+      "intent": "FACT"
+    },
+    {
+      "question_id": "q103",
+      "doc_id": "fin_report_2025",
+      "page_images": [
+        "data/evaluation/sample_images/doc1_page1.png",
+        "data/evaluation/sample_images/doc1_page2.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - Q3 2025 FINANCIAL PERFORMANCE\n\n1. Executive Summary:\nApex Global demonstrated resilient operational growth across global software verticals.\nCloud subscription margins expanded by 340 basis points year-over-year.\n\nTable 1: Quarterly Financial Summary (USD Billions)\n| Quarter | Revenue | Operating Income | Net Margin |\n|---|---|---|---|\n| Q1 2025 | $3.95B | $1.12B | 28.3% |\n| Q2 2025 | $4.21B | $1.25B | 29.7% |\n| Q3 2025 | $4.82B | $1.48B | 30.7% |\n| Q4 2024 | $3.80B | $1.05B | 27.6% |\n",
+          "words": []
+        },
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - GOVERNANCE & AUDIT\n\n2. Independent Auditor Opinion:\nThe consolidated statements present fairly in all material respects the financial position.\nApproved by the Board of Directors on October 24, 2025.\n\n\u2605 OFFICIAL CORPORATE SEAL \u2605\nApex Global Enterprises\nStatus: Verified & Validated\n\nExecutive Sign-Off:\nMarcus Vance\nChief Financial Officer, Apex Global\nElena Rostova\nChief Executive Officer, Apex Global\n",
+          "words": []
+        }
+      ],
+      "question": "What is the corporate seal status on page 2?",
+      "answers": [
+        "Verified & Validated",
+        "Verified and Validated",
+        "Verified"
+      ],
+      "modality": "visual",
+      "gold_pages": [
+        2
+      ],
+      "intent": "VISUAL"
+    },
+    {
+      "question_id": "q104",
+      "doc_id": "clinical_study_09",
+      "page_images": [
+        "data/evaluation/sample_images/doc2_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "BIOMED RESEARCH INSTITUTE - CLINICAL TRIAL REPORT (PHASE 3)\n\nAbstract: Therapeutic assessment of BMR-902 in randomized cohorts.\n\nTable: Primary Endpoint Efficacy Breakdown\n| Cohort Group | Patient Count | Efficacy Rate | p-value |\n|---|---|---|---|\n| Cohort A (Standard) | 450 patients | 72.4% | p < 0.05 |\n| Cohort B (BMR-902 High) | 450 patients | 94.6% | p < 0.001 |\n| Cohort C (Placebo) | 450 patients | 18.2% | N/A |\n\nFigure 1: Cohort Response Trajectory Diagram\nLegend: Blue = Control Group | Green = Active BMR-902\n",
+          "words": []
+        }
+      ],
+      "question": "What is the reported efficacy rate for Cohort B in the Phase 3 trial?",
+      "answers": [
+        "94.6%",
+        "94.6 percent",
+        "94.6"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP"
+    },
+    {
+      "question_id": "q105",
+      "doc_id": "clinical_study_09",
+      "page_images": [
+        "data/evaluation/sample_images/doc2_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "BIOMED RESEARCH INSTITUTE - CLINICAL TRIAL REPORT (PHASE 3)\n\nAbstract: Therapeutic assessment of BMR-902 in randomized cohorts.\n\nTable: Primary Endpoint Efficacy Breakdown\n| Cohort Group | Patient Count | Efficacy Rate | p-value |\n|---|---|---|---|\n| Cohort A (Standard) | 450 patients | 72.4% | p < 0.05 |\n| Cohort B (BMR-902 High) | 450 patients | 94.6% | p < 0.001 |\n| Cohort C (Placebo) | 450 patients | 18.2% | N/A |\n\nFigure 1: Cohort Response Trajectory Diagram\nLegend: Blue = Control Group | Green = Active BMR-902\n",
+          "words": []
+        }
+      ],
+      "question": "What color indicates the control group in the clinical trial figure?",
+      "answers": [
+        "Blue",
+        "Blue bar",
+        "Blue line"
+      ],
+      "modality": "visual",
+      "gold_pages": [
+        1
+      ],
+      "intent": "VISUAL"
+    },
+    {
+      "question_id": "q106",
+      "doc_id": "invoice_88921",
+      "page_images": [
+        "data/evaluation/sample_images/doc3_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "NEXUS LOGISTICS - OFFICIAL COMMERCIAL INVOICE\n\nInvoice Number: 88921\nInvoice Date: October 15, 2025\nPayment Due Date: November 15, 2025\n\nItemized Services & Goods:\n| Description | Quantity | Unit Price | Total |\n|---|---|---|---|\n| Enterprise Cloud Routing Cluster | 2 units | $5,000.00 | $10,000.00 |\n| Dedicated Fiber Backbone Setup | 1 service | $4,250.00 | $4,250.00 |\n\nFinal Balance Due: $14,250.00\n",
+          "words": []
+        }
+      ],
+      "question": "What is the final invoice balance due?",
+      "answers": [
+        "$14,250.00",
+        "$14,250",
+        "14250.00",
+        "14,250"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP"
+    },
+    {
+      "question_id": "q107",
+      "doc_id": "invoice_88921",
+      "page_images": [
+        "data/evaluation/sample_images/doc3_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "NEXUS LOGISTICS - OFFICIAL COMMERCIAL INVOICE\n\nInvoice Number: 88921\nInvoice Date: October 15, 2025\nPayment Due Date: November 15, 2025\n\nItemized Services & Goods:\n| Description | Quantity | Unit Price | Total |\n|---|---|---|---|\n| Enterprise Cloud Routing Cluster | 2 units | $5,000.00 | $10,000.00 |\n| Dedicated Fiber Backbone Setup | 1 service | $4,250.00 | $4,250.00 |\n\nFinal Balance Due: $14,250.00\n",
+          "words": []
+        }
+      ],
+      "question": "What is the payment due date for invoice 88921?",
+      "answers": [
+        "November 15, 2025",
+        "15 Nov 2025",
+        "11/15/2025"
+      ],
+      "modality": "text",
+      "gold_pages": [
+        1
+      ],
+      "intent": "FACT"
+    },
+    {
+      "question_id": "q108",
+      "doc_id": "fin_report_2025",
+      "page_images": [
+        "data/evaluation/sample_images/doc1_page1.png",
+        "data/evaluation/sample_images/doc1_page2.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - Q3 2025 FINANCIAL PERFORMANCE\n\n1. Executive Summary:\nApex Global demonstrated resilient operational growth across global software verticals.\nCloud subscription margins expanded by 340 basis points year-over-year.\n\nTable 1: Quarterly Financial Summary (USD Billions)\n| Quarter | Revenue | Operating Income | Net Margin |\n|---|---|---|---|\n| Q1 2025 | $3.95B | $1.12B | 28.3% |\n| Q2 2025 | $4.21B | $1.25B | 29.7% |\n| Q3 2025 | $4.82B | $1.48B | 30.7% |\n| Q4 2024 | $3.80B | $1.05B | 27.6% |\n",
+          "words": []
+        },
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - GOVERNANCE & AUDIT\n\n2. Independent Auditor Opinion:\nThe consolidated statements present fairly in all material respects the financial position.\nApproved by the Board of Directors on October 24, 2025.\n\n\u2605 OFFICIAL CORPORATE SEAL \u2605\nApex Global Enterprises\nStatus: Verified & Validated\n\nExecutive Sign-Off:\nMarcus Vance\nChief Financial Officer, Apex Global\nElena Rostova\nChief Executive Officer, Apex Global\n",
+          "words": []
+        }
+      ],
+      "question": "What is the projected revenue for the year 2040?",
+      "answers": [
+        "Insufficient evidence in document to answer the question."
+      ],
+      "modality": "text",
+      "gold_pages": [],
+      "intent": "FACT",
+      "is_unanswerable": true
+    }
+  ]
+}
