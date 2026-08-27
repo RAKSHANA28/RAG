@@ -72,6 +72,15 @@ class QueryAnalyzer:
         # 3. Entity & Key Term Extraction
         key_entities = self._extract_entities(cleaned_query, meaningful_words)
 
+        # Semantic concept expansion for cross-vocabulary document matching
+        expanded_entities = list(key_entities)
+        if any(k in lower_q for k in ["objective", "goal", "purpose", "aim"]):
+            expanded_entities.extend(["goal", "objective", "purpose", "aim"])
+        if any(k in lower_q for k in ["candidate", "author", "prepared for", "student"]):
+            expanded_entities.extend(["prepared", "candidate", "author", "target", "pursuing"])
+        if any(k in lower_q for k in ["summary", "overview", "about", "covers"]):
+            expanded_entities.extend(["summary", "overview", "covers", "abstract", "scope"])
+
         # 4. Expected Answer Type Detection
         answer_type = self._detect_expected_answer_type(lower_q, all_words)
 
@@ -84,14 +93,14 @@ class QueryAnalyzer:
             cleaned_query=cleaned_query,
             intent=intent,
             modality_weights=modality_weights,
-            key_entities=key_entities,
+            key_entities=expanded_entities,
             expected_answer_type=answer_type,
             requires_comparison=requires_comp,
             requires_temporal=requires_temp,
             raw_analysis={
                 "detected_intent": intent.value,
                 "modality_scores": modality_weights,
-                "extracted_entities": key_entities,
+                "extracted_entities": expanded_entities,
                 "answer_type": answer_type
             }
         )

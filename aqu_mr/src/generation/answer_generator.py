@@ -345,6 +345,40 @@ class GroundedAnswerGenerator:
                         raw_model_output=ans
                     )
 
+        # 1c. Goal / Objective / Purpose / Overview Question
+        if any(k in lower_q for k in ["objective", "goal", "purpose", "aim", "primary objective", "overview", "what is this document about"]):
+            for item in text_items:
+                paras = [p.strip() for p in item.content.split("\n\n") if p.strip()]
+                for idx, p in enumerate(paras):
+                    p_lower = p.lower()
+                    if any(k in p_lower for k in ["project goal", "goal:", "objective:", "purpose:"]) or "1. project goal" in p_lower or p_lower.startswith("project goal"):
+                        goal_text = p.split(":")[-1].strip() if ":" in p else p
+                        if (len(goal_text) < 30 or "1. project goal" in goal_text.lower()) and idx + 1 < len(paras):
+                            goal_text = paras[idx + 1]
+                        return GroundedAnswer(
+                            query=query,
+                            answer_text=goal_text,
+                            confidence=0.98,
+                            source_pages=[item.page_num],
+                            supporting_evidence=[item],
+                            reasoning_trace=f"Extracted project goal/objective on Page {item.page_num}.",
+                            query_contract=query_contract,
+                            raw_model_output=goal_text
+                        )
+            # If top chunk is ranked #1 with high score (>0.7)
+            if text_items and text_items[0].score >= 0.7:
+                top_text = text_items[0].content.split("\n\n")[0].strip()
+                return GroundedAnswer(
+                    query=query,
+                    answer_text=top_text,
+                    confidence=0.95,
+                    source_pages=[text_items[0].page_num],
+                    supporting_evidence=[text_items[0]],
+                    reasoning_trace=f"Extracted primary overview from Page {text_items[0].page_num}.",
+                    query_contract=query_contract,
+                    raw_model_output=top_text
+                )
+
         # 2. Phase list question
         if any(k in lower_q for k in ["what are the phases", "what does this document cover", "phases covered", "six phases"]):
             for item in text_items:
