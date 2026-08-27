@@ -117,8 +117,10 @@ class DocVQABenchmarkLoader:
 
         benchmark_data = {
             "dataset": "VLR-CVC/DocVQA-2026",
-            "version": "1.0",
+            "version": "2.0",
+            "description": "Comprehensive multimodal benchmark for Document Visual Question Answering",
             "samples": [
+                # --- Document 1: Financial & Corporate Report ---
                 {
                     "question_id": "q101",
                     "doc_id": "fin_report_2025",
@@ -154,6 +156,42 @@ class DocVQABenchmarkLoader:
                 },
                 {
                     "question_id": "q104",
+                    "doc_id": "fin_report_2025",
+                    "page_images": [doc1_img1, doc1_img2],
+                    "ocr_annotations": doc1_ocr,
+                    "question": "What was the operating income reported in Q1 2025?",
+                    "answers": ["$1.12B", "1.12B", "$1.12 billion"],
+                    "modality": "table",
+                    "gold_pages": [1],
+                    "intent": "TABLE_LOOKUP"
+                },
+                {
+                    "question_id": "q105",
+                    "doc_id": "fin_report_2025",
+                    "page_images": [doc1_img1, doc1_img2],
+                    "ocr_annotations": doc1_ocr,
+                    "question": "Who is the Chief Executive Officer mentioned in executive sign-off?",
+                    "answers": ["Elena Rostova", "Elena Rostova, CEO", "Elena Rostova Chief Executive Officer"],
+                    "modality": "text",
+                    "gold_pages": [2],
+                    "intent": "FACT"
+                },
+                {
+                    "question_id": "q106",
+                    "doc_id": "fin_report_2025",
+                    "page_images": [doc1_img1, doc1_img2],
+                    "ocr_annotations": doc1_ocr,
+                    "question": "What is the projected revenue for the year 2040?",
+                    "answers": ["Insufficient evidence in document to answer the question.", "unanswerable", "none"],
+                    "modality": "text",
+                    "gold_pages": [1],
+                    "intent": "FACT",
+                    "is_unanswerable": True
+                },
+
+                # --- Document 2: Clinical Trial Report ---
+                {
+                    "question_id": "q201",
                     "doc_id": "clinical_study_09",
                     "page_images": [doc2_img1],
                     "ocr_annotations": doc2_ocr,
@@ -164,7 +202,7 @@ class DocVQABenchmarkLoader:
                     "intent": "TABLE_LOOKUP"
                 },
                 {
-                    "question_id": "q105",
+                    "question_id": "q202",
                     "doc_id": "clinical_study_09",
                     "page_images": [doc2_img1],
                     "ocr_annotations": doc2_ocr,
@@ -175,7 +213,54 @@ class DocVQABenchmarkLoader:
                     "intent": "VISUAL"
                 },
                 {
-                    "question_id": "q106",
+                    "question_id": "q203",
+                    "doc_id": "clinical_study_09",
+                    "page_images": [doc2_img1],
+                    "ocr_annotations": doc2_ocr,
+                    "question": "How many patients were enrolled in Cohort A?",
+                    "answers": ["450 patients", "450", "450 enrolled"],
+                    "modality": "table",
+                    "gold_pages": [1],
+                    "intent": "TABLE_LOOKUP"
+                },
+                {
+                    "question_id": "q204",
+                    "doc_id": "clinical_study_09",
+                    "page_images": [doc2_img1],
+                    "ocr_annotations": doc2_ocr,
+                    "question": "What color indicates the active BMR-902 treatment in Figure 1?",
+                    "answers": ["Green", "Green line", "Green bar"],
+                    "modality": "visual",
+                    "gold_pages": [1],
+                    "intent": "VISUAL"
+                },
+                {
+                    "question_id": "q205",
+                    "doc_id": "clinical_study_09",
+                    "page_images": [doc2_img1],
+                    "ocr_annotations": doc2_ocr,
+                    "question": "What is the efficacy rate reported for Cohort C Placebo?",
+                    "answers": ["18.2%", "18.2 percent", "18.2"],
+                    "modality": "table",
+                    "gold_pages": [1],
+                    "intent": "TABLE_LOOKUP"
+                },
+                {
+                    "question_id": "q206",
+                    "doc_id": "clinical_study_09",
+                    "page_images": [doc2_img1],
+                    "ocr_annotations": doc2_ocr,
+                    "question": "What is the expected release date for Phase 4 commercial production?",
+                    "answers": ["Insufficient evidence in document to answer the question.", "unanswerable", "none"],
+                    "modality": "text",
+                    "gold_pages": [1],
+                    "intent": "FACT",
+                    "is_unanswerable": True
+                },
+
+                # --- Document 3: Commercial Logistics Invoice ---
+                {
+                    "question_id": "q301",
                     "doc_id": "invoice_88921",
                     "page_images": [doc3_img1],
                     "ocr_annotations": doc3_ocr,
@@ -186,7 +271,7 @@ class DocVQABenchmarkLoader:
                     "intent": "TABLE_LOOKUP"
                 },
                 {
-                    "question_id": "q107",
+                    "question_id": "q302",
                     "doc_id": "invoice_88921",
                     "page_images": [doc3_img1],
                     "ocr_annotations": doc3_ocr,
@@ -197,15 +282,48 @@ class DocVQABenchmarkLoader:
                     "intent": "FACT"
                 },
                 {
-                    "question_id": "q108",
-                    "doc_id": "fin_report_2025",
-                    "page_images": [doc1_img1, doc1_img2],
-                    "ocr_annotations": doc1_ocr,
-                    "question": "What is the projected revenue for the year 2040?",
-                    "answers": ["Insufficient evidence in document to answer the question."],
+                    "question_id": "q303",
+                    "doc_id": "invoice_88921",
+                    "page_images": [doc3_img1],
+                    "ocr_annotations": doc3_ocr,
+                    "question": "What is the price of Enterprise Cloud Routing Cluster?",
+                    "answers": ["$5,000.00", "$10,000.00", "5000", "$5,000"],
+                    "modality": "table",
+                    "gold_pages": [1],
+                    "intent": "TABLE_LOOKUP"
+                },
+                {
+                    "question_id": "q304",
+                    "doc_id": "invoice_88921",
+                    "page_images": [doc3_img1],
+                    "ocr_annotations": doc3_ocr,
+                    "question": "What is the invoice issue date?",
+                    "answers": ["October 15, 2025", "15 Oct 2025", "10/15/2025"],
                     "modality": "text",
-                    "gold_pages": [],
-                    "intent": "FACT",
+                    "gold_pages": [1],
+                    "intent": "FACT"
+                },
+                {
+                    "question_id": "q305",
+                    "doc_id": "invoice_88921",
+                    "page_images": [doc3_img1],
+                    "ocr_annotations": doc3_ocr,
+                    "question": "What is the item total cost for Dedicated Fiber Backbone Setup?",
+                    "answers": ["$4,250.00", "$4,250", "4250.00"],
+                    "modality": "table",
+                    "gold_pages": [1],
+                    "intent": "TABLE_LOOKUP"
+                },
+                {
+                    "question_id": "q306",
+                    "doc_id": "invoice_88921",
+                    "page_images": [doc3_img1],
+                    "ocr_annotations": doc3_ocr,
+                    "question": "What discount code was applied to this invoice?",
+                    "answers": ["Insufficient evidence in document to answer the question.", "unanswerable", "none"],
+                    "modality": "table",
+                    "gold_pages": [1],
+                    "intent": "TABLE_LOOKUP",
                     "is_unanswerable": True
                 }
             ]

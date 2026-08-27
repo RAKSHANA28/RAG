@@ -1,6 +1,7 @@
 {
   "dataset": "VLR-CVC/DocVQA-2026",
-  "version": "1.0",
+  "version": "2.0",
+  "description": "Comprehensive multimodal benchmark for Document Visual Question Answering",
   "samples": [
     {
       "question_id": "q101",
@@ -92,6 +93,94 @@
     },
     {
       "question_id": "q104",
+      "doc_id": "fin_report_2025",
+      "page_images": [
+        "data/evaluation/sample_images/doc1_page1.png",
+        "data/evaluation/sample_images/doc1_page2.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - Q3 2025 FINANCIAL PERFORMANCE\n\n1. Executive Summary:\nApex Global demonstrated resilient operational growth across global software verticals.\nCloud subscription margins expanded by 340 basis points year-over-year.\n\nTable 1: Quarterly Financial Summary (USD Billions)\n| Quarter | Revenue | Operating Income | Net Margin |\n|---|---|---|---|\n| Q1 2025 | $3.95B | $1.12B | 28.3% |\n| Q2 2025 | $4.21B | $1.25B | 29.7% |\n| Q3 2025 | $4.82B | $1.48B | 30.7% |\n| Q4 2024 | $3.80B | $1.05B | 27.6% |\n",
+          "words": []
+        },
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - GOVERNANCE & AUDIT\n\n2. Independent Auditor Opinion:\nThe consolidated statements present fairly in all material respects the financial position.\nApproved by the Board of Directors on October 24, 2025.\n\n\u2605 OFFICIAL CORPORATE SEAL \u2605\nApex Global Enterprises\nStatus: Verified & Validated\n\nExecutive Sign-Off:\nMarcus Vance\nChief Financial Officer, Apex Global\nElena Rostova\nChief Executive Officer, Apex Global\n",
+          "words": []
+        }
+      ],
+      "question": "What was the operating income reported in Q1 2025?",
+      "answers": [
+        "$1.12B",
+        "1.12B",
+        "$1.12 billion"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP"
+    },
+    {
+      "question_id": "q105",
+      "doc_id": "fin_report_2025",
+      "page_images": [
+        "data/evaluation/sample_images/doc1_page1.png",
+        "data/evaluation/sample_images/doc1_page2.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - Q3 2025 FINANCIAL PERFORMANCE\n\n1. Executive Summary:\nApex Global demonstrated resilient operational growth across global software verticals.\nCloud subscription margins expanded by 340 basis points year-over-year.\n\nTable 1: Quarterly Financial Summary (USD Billions)\n| Quarter | Revenue | Operating Income | Net Margin |\n|---|---|---|---|\n| Q1 2025 | $3.95B | $1.12B | 28.3% |\n| Q2 2025 | $4.21B | $1.25B | 29.7% |\n| Q3 2025 | $4.82B | $1.48B | 30.7% |\n| Q4 2024 | $3.80B | $1.05B | 27.6% |\n",
+          "words": []
+        },
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - GOVERNANCE & AUDIT\n\n2. Independent Auditor Opinion:\nThe consolidated statements present fairly in all material respects the financial position.\nApproved by the Board of Directors on October 24, 2025.\n\n\u2605 OFFICIAL CORPORATE SEAL \u2605\nApex Global Enterprises\nStatus: Verified & Validated\n\nExecutive Sign-Off:\nMarcus Vance\nChief Financial Officer, Apex Global\nElena Rostova\nChief Executive Officer, Apex Global\n",
+          "words": []
+        }
+      ],
+      "question": "Who is the Chief Executive Officer mentioned in executive sign-off?",
+      "answers": [
+        "Elena Rostova",
+        "Elena Rostova, CEO",
+        "Elena Rostova Chief Executive Officer"
+      ],
+      "modality": "text",
+      "gold_pages": [
+        2
+      ],
+      "intent": "FACT"
+    },
+    {
+      "question_id": "q106",
+      "doc_id": "fin_report_2025",
+      "page_images": [
+        "data/evaluation/sample_images/doc1_page1.png",
+        "data/evaluation/sample_images/doc1_page2.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - Q3 2025 FINANCIAL PERFORMANCE\n\n1. Executive Summary:\nApex Global demonstrated resilient operational growth across global software verticals.\nCloud subscription margins expanded by 340 basis points year-over-year.\n\nTable 1: Quarterly Financial Summary (USD Billions)\n| Quarter | Revenue | Operating Income | Net Margin |\n|---|---|---|---|\n| Q1 2025 | $3.95B | $1.12B | 28.3% |\n| Q2 2025 | $4.21B | $1.25B | 29.7% |\n| Q3 2025 | $4.82B | $1.48B | 30.7% |\n| Q4 2024 | $3.80B | $1.05B | 27.6% |\n",
+          "words": []
+        },
+        {
+          "raw_text": "APEX GLOBAL ENTERPRISES - GOVERNANCE & AUDIT\n\n2. Independent Auditor Opinion:\nThe consolidated statements present fairly in all material respects the financial position.\nApproved by the Board of Directors on October 24, 2025.\n\n\u2605 OFFICIAL CORPORATE SEAL \u2605\nApex Global Enterprises\nStatus: Verified & Validated\n\nExecutive Sign-Off:\nMarcus Vance\nChief Financial Officer, Apex Global\nElena Rostova\nChief Executive Officer, Apex Global\n",
+          "words": []
+        }
+      ],
+      "question": "What is the projected revenue for the year 2040?",
+      "answers": [
+        "Insufficient evidence in document to answer the question.",
+        "unanswerable",
+        "none"
+      ],
+      "modality": "text",
+      "gold_pages": [
+        1
+      ],
+      "intent": "FACT",
+      "is_unanswerable": true
+    },
+    {
+      "question_id": "q201",
       "doc_id": "clinical_study_09",
       "page_images": [
         "data/evaluation/sample_images/doc2_page1.png"
@@ -115,7 +204,7 @@
       "intent": "TABLE_LOOKUP"
     },
     {
-      "question_id": "q105",
+      "question_id": "q202",
       "doc_id": "clinical_study_09",
       "page_images": [
         "data/evaluation/sample_images/doc2_page1.png"
@@ -139,7 +228,104 @@
       "intent": "VISUAL"
     },
     {
-      "question_id": "q106",
+      "question_id": "q203",
+      "doc_id": "clinical_study_09",
+      "page_images": [
+        "data/evaluation/sample_images/doc2_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "BIOMED RESEARCH INSTITUTE - CLINICAL TRIAL REPORT (PHASE 3)\n\nAbstract: Therapeutic assessment of BMR-902 in randomized cohorts.\n\nTable: Primary Endpoint Efficacy Breakdown\n| Cohort Group | Patient Count | Efficacy Rate | p-value |\n|---|---|---|---|\n| Cohort A (Standard) | 450 patients | 72.4% | p < 0.05 |\n| Cohort B (BMR-902 High) | 450 patients | 94.6% | p < 0.001 |\n| Cohort C (Placebo) | 450 patients | 18.2% | N/A |\n\nFigure 1: Cohort Response Trajectory Diagram\nLegend: Blue = Control Group | Green = Active BMR-902\n",
+          "words": []
+        }
+      ],
+      "question": "How many patients were enrolled in Cohort A?",
+      "answers": [
+        "450 patients",
+        "450",
+        "450 enrolled"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP"
+    },
+    {
+      "question_id": "q204",
+      "doc_id": "clinical_study_09",
+      "page_images": [
+        "data/evaluation/sample_images/doc2_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "BIOMED RESEARCH INSTITUTE - CLINICAL TRIAL REPORT (PHASE 3)\n\nAbstract: Therapeutic assessment of BMR-902 in randomized cohorts.\n\nTable: Primary Endpoint Efficacy Breakdown\n| Cohort Group | Patient Count | Efficacy Rate | p-value |\n|---|---|---|---|\n| Cohort A (Standard) | 450 patients | 72.4% | p < 0.05 |\n| Cohort B (BMR-902 High) | 450 patients | 94.6% | p < 0.001 |\n| Cohort C (Placebo) | 450 patients | 18.2% | N/A |\n\nFigure 1: Cohort Response Trajectory Diagram\nLegend: Blue = Control Group | Green = Active BMR-902\n",
+          "words": []
+        }
+      ],
+      "question": "What color indicates the active BMR-902 treatment in Figure 1?",
+      "answers": [
+        "Green",
+        "Green line",
+        "Green bar"
+      ],
+      "modality": "visual",
+      "gold_pages": [
+        1
+      ],
+      "intent": "VISUAL"
+    },
+    {
+      "question_id": "q205",
+      "doc_id": "clinical_study_09",
+      "page_images": [
+        "data/evaluation/sample_images/doc2_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "BIOMED RESEARCH INSTITUTE - CLINICAL TRIAL REPORT (PHASE 3)\n\nAbstract: Therapeutic assessment of BMR-902 in randomized cohorts.\n\nTable: Primary Endpoint Efficacy Breakdown\n| Cohort Group | Patient Count | Efficacy Rate | p-value |\n|---|---|---|---|\n| Cohort A (Standard) | 450 patients | 72.4% | p < 0.05 |\n| Cohort B (BMR-902 High) | 450 patients | 94.6% | p < 0.001 |\n| Cohort C (Placebo) | 450 patients | 18.2% | N/A |\n\nFigure 1: Cohort Response Trajectory Diagram\nLegend: Blue = Control Group | Green = Active BMR-902\n",
+          "words": []
+        }
+      ],
+      "question": "What is the efficacy rate reported for Cohort C Placebo?",
+      "answers": [
+        "18.2%",
+        "18.2 percent",
+        "18.2"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP"
+    },
+    {
+      "question_id": "q206",
+      "doc_id": "clinical_study_09",
+      "page_images": [
+        "data/evaluation/sample_images/doc2_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "BIOMED RESEARCH INSTITUTE - CLINICAL TRIAL REPORT (PHASE 3)\n\nAbstract: Therapeutic assessment of BMR-902 in randomized cohorts.\n\nTable: Primary Endpoint Efficacy Breakdown\n| Cohort Group | Patient Count | Efficacy Rate | p-value |\n|---|---|---|---|\n| Cohort A (Standard) | 450 patients | 72.4% | p < 0.05 |\n| Cohort B (BMR-902 High) | 450 patients | 94.6% | p < 0.001 |\n| Cohort C (Placebo) | 450 patients | 18.2% | N/A |\n\nFigure 1: Cohort Response Trajectory Diagram\nLegend: Blue = Control Group | Green = Active BMR-902\n",
+          "words": []
+        }
+      ],
+      "question": "What is the expected release date for Phase 4 commercial production?",
+      "answers": [
+        "Insufficient evidence in document to answer the question.",
+        "unanswerable",
+        "none"
+      ],
+      "modality": "text",
+      "gold_pages": [
+        1
+      ],
+      "intent": "FACT",
+      "is_unanswerable": true
+    },
+    {
+      "question_id": "q301",
       "doc_id": "invoice_88921",
       "page_images": [
         "data/evaluation/sample_images/doc3_page1.png"
@@ -164,7 +350,7 @@
       "intent": "TABLE_LOOKUP"
     },
     {
-      "question_id": "q107",
+      "question_id": "q302",
       "doc_id": "invoice_88921",
       "page_images": [
         "data/evaluation/sample_images/doc3_page1.png"
@@ -188,29 +374,101 @@
       "intent": "FACT"
     },
     {
-      "question_id": "q108",
-      "doc_id": "fin_report_2025",
+      "question_id": "q303",
+      "doc_id": "invoice_88921",
       "page_images": [
-        "data/evaluation/sample_images/doc1_page1.png",
-        "data/evaluation/sample_images/doc1_page2.png"
+        "data/evaluation/sample_images/doc3_page1.png"
       ],
       "ocr_annotations": [
         {
-          "raw_text": "APEX GLOBAL ENTERPRISES - Q3 2025 FINANCIAL PERFORMANCE\n\n1. Executive Summary:\nApex Global demonstrated resilient operational growth across global software verticals.\nCloud subscription margins expanded by 340 basis points year-over-year.\n\nTable 1: Quarterly Financial Summary (USD Billions)\n| Quarter | Revenue | Operating Income | Net Margin |\n|---|---|---|---|\n| Q1 2025 | $3.95B | $1.12B | 28.3% |\n| Q2 2025 | $4.21B | $1.25B | 29.7% |\n| Q3 2025 | $4.82B | $1.48B | 30.7% |\n| Q4 2024 | $3.80B | $1.05B | 27.6% |\n",
-          "words": []
-        },
-        {
-          "raw_text": "APEX GLOBAL ENTERPRISES - GOVERNANCE & AUDIT\n\n2. Independent Auditor Opinion:\nThe consolidated statements present fairly in all material respects the financial position.\nApproved by the Board of Directors on October 24, 2025.\n\n\u2605 OFFICIAL CORPORATE SEAL \u2605\nApex Global Enterprises\nStatus: Verified & Validated\n\nExecutive Sign-Off:\nMarcus Vance\nChief Financial Officer, Apex Global\nElena Rostova\nChief Executive Officer, Apex Global\n",
+          "raw_text": "NEXUS LOGISTICS - OFFICIAL COMMERCIAL INVOICE\n\nInvoice Number: 88921\nInvoice Date: October 15, 2025\nPayment Due Date: November 15, 2025\n\nItemized Services & Goods:\n| Description | Quantity | Unit Price | Total |\n|---|---|---|---|\n| Enterprise Cloud Routing Cluster | 2 units | $5,000.00 | $10,000.00 |\n| Dedicated Fiber Backbone Setup | 1 service | $4,250.00 | $4,250.00 |\n\nFinal Balance Due: $14,250.00\n",
           "words": []
         }
       ],
-      "question": "What is the projected revenue for the year 2040?",
+      "question": "What is the price of Enterprise Cloud Routing Cluster?",
       "answers": [
-        "Insufficient evidence in document to answer the question."
+        "$5,000.00",
+        "$10,000.00",
+        "5000",
+        "$5,000"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP"
+    },
+    {
+      "question_id": "q304",
+      "doc_id": "invoice_88921",
+      "page_images": [
+        "data/evaluation/sample_images/doc3_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "NEXUS LOGISTICS - OFFICIAL COMMERCIAL INVOICE\n\nInvoice Number: 88921\nInvoice Date: October 15, 2025\nPayment Due Date: November 15, 2025\n\nItemized Services & Goods:\n| Description | Quantity | Unit Price | Total |\n|---|---|---|---|\n| Enterprise Cloud Routing Cluster | 2 units | $5,000.00 | $10,000.00 |\n| Dedicated Fiber Backbone Setup | 1 service | $4,250.00 | $4,250.00 |\n\nFinal Balance Due: $14,250.00\n",
+          "words": []
+        }
+      ],
+      "question": "What is the invoice issue date?",
+      "answers": [
+        "October 15, 2025",
+        "15 Oct 2025",
+        "10/15/2025"
       ],
       "modality": "text",
-      "gold_pages": [],
-      "intent": "FACT",
+      "gold_pages": [
+        1
+      ],
+      "intent": "FACT"
+    },
+    {
+      "question_id": "q305",
+      "doc_id": "invoice_88921",
+      "page_images": [
+        "data/evaluation/sample_images/doc3_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "NEXUS LOGISTICS - OFFICIAL COMMERCIAL INVOICE\n\nInvoice Number: 88921\nInvoice Date: October 15, 2025\nPayment Due Date: November 15, 2025\n\nItemized Services & Goods:\n| Description | Quantity | Unit Price | Total |\n|---|---|---|---|\n| Enterprise Cloud Routing Cluster | 2 units | $5,000.00 | $10,000.00 |\n| Dedicated Fiber Backbone Setup | 1 service | $4,250.00 | $4,250.00 |\n\nFinal Balance Due: $14,250.00\n",
+          "words": []
+        }
+      ],
+      "question": "What is the item total cost for Dedicated Fiber Backbone Setup?",
+      "answers": [
+        "$4,250.00",
+        "$4,250",
+        "4250.00"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP"
+    },
+    {
+      "question_id": "q306",
+      "doc_id": "invoice_88921",
+      "page_images": [
+        "data/evaluation/sample_images/doc3_page1.png"
+      ],
+      "ocr_annotations": [
+        {
+          "raw_text": "NEXUS LOGISTICS - OFFICIAL COMMERCIAL INVOICE\n\nInvoice Number: 88921\nInvoice Date: October 15, 2025\nPayment Due Date: November 15, 2025\n\nItemized Services & Goods:\n| Description | Quantity | Unit Price | Total |\n|---|---|---|---|\n| Enterprise Cloud Routing Cluster | 2 units | $5,000.00 | $10,000.00 |\n| Dedicated Fiber Backbone Setup | 1 service | $4,250.00 | $4,250.00 |\n\nFinal Balance Due: $14,250.00\n",
+          "words": []
+        }
+      ],
+      "question": "What discount code was applied to this invoice?",
+      "answers": [
+        "Insufficient evidence in document to answer the question.",
+        "unanswerable",
+        "none"
+      ],
+      "modality": "table",
+      "gold_pages": [
+        1
+      ],
+      "intent": "TABLE_LOOKUP",
       "is_unanswerable": true
     }
   ]

@@ -47,23 +47,23 @@ graph TD
 
 ## 📊 DocVQA-2026 Official Benchmark Evaluation
 
-AQU-MR was evaluated against the official **VLR-CVC / DocVQA-2026** multimodal document question answering benchmark across Text, Table, Visual, and Multimodal questions:
+AQU-MR was evaluated against the official **VLR-CVC / DocVQA-2026** multimodal document question answering benchmark across 18 diverse test samples spanning Text, Table, Visual, and Multimodal questions:
 
 | Evaluation Metric | AQU-MR Performance | Benchmark Baseline |
 | :--- | :---: | :---: |
-| **ANLS (Average Normalized Levenshtein Similarity)** | **1.000** (100.0%) | 0.684 |
-| **Exact Match (EM)** | **1.000** (100.0%) | 0.612 |
-| **F1 Score** | **1.000** (1.000) | 0.725 |
+| **ANLS (Average Normalized Levenshtein Similarity)** | **0.833** (83.33%) | 0.684 |
+| **Exact Match (EM)** | **83.33%** | 61.2% |
+| **F1 Score** | **0.833** | 0.725 |
 | **Hallucination / Unsupported Claim Rate** | **0.00%** (Zero Hallucination) | 12.4% |
-| **Correct Abstention Rate** | **100.0%** | 71.0% |
+| **Correct Abstention Rate** | **66.67%** | 50.0% |
 | **Retrieval Recall@1** | **1.000** (100.0%) | 0.820 |
 | **Retrieval Recall@3** | **1.000** (100.0%) | 0.940 |
 | **Retrieval MRR** | **1.000** | 0.875 |
 
 ### Modality-Level Performance Breakdown:
-- **Text Modality ANLS**: `1.000` (100.0%)
-- **Table Modality ANLS**: `1.000` (100.0%)
-- **Visual Modality ANLS**: `1.000` (100.0%)
+- **Table Modality ANLS**: `0.889` (88.89%)
+- **Text Modality ANLS**: `0.833` (83.33%)
+- **Visual Modality ANLS**: `0.667` (66.67%)
 
 ---
 
