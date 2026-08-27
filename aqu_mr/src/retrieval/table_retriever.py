@@ -59,7 +59,11 @@ class TableRetriever:
         query_vec = self.vectorizer.transform([query])
         dense_scores = cosine_similarity(query_vec, self.table_matrix).flatten()
 
-        query_tokens = set(re.findall(r'\b\w+\b', query.lower()))
+        query_tokens = set(re.findall(r'\b\w+\b', query.lower())) - {
+            "what", "is", "the", "in", "of", "for", "to", "a", "an", "and", "or", "on", "at",
+            "by", "with", "from", "about", "as", "into", "like", "tell", "me", "can", "you",
+            "give", "show", "find", "does", "did", "was", "were", "are", "be", "this", "that"
+        }
 
         results: List[EvidenceItem] = []
         scored_tables = []
@@ -86,7 +90,7 @@ class TableRetriever:
                     hit = False
                     if target_entities:
                         for ent in target_entities:
-                            if ent.lower() in val_lower:
+                            if ent.lower() in val_lower and len(ent) > 2:
                                 hit = True
                                 break
                     if any(tok in val_lower for tok in query_tokens if len(tok) > 2):

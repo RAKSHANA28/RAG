@@ -257,8 +257,8 @@ def main():
             st.markdown("---")
             st.subheader("2. Ask a Question")
 
-            # Sample questions for selected benchmark doc
-            sample_q_map = {
+            # Sample questions map for benchmark docs
+            benchmark_q_map = {
                 "fin_report_2025": [
                     "What was the total revenue in Q3 2025?",
                     "Who is the Chief Financial Officer who signed the audit report?",
@@ -277,17 +277,61 @@ def main():
                 ]
             }
 
-            prefill_q = ""
-            if current_doc.doc_id in sample_q_map:
-                st.markdown("**Suggested Quick Questions:**")
-                q_cols = st.columns(len(sample_q_map[current_doc.doc_id]))
-                for i, sq in enumerate(sample_q_map[current_doc.doc_id]):
-                    if q_cols[i].button(sq, key=f"sq_{i}"):
-                        prefill_q = sq
+            # Generate dynamic suggested questions for uploaded or benchmark documents
+            suggested_questions = []
+            if current_doc.doc_id in benchmark_q_map:
+                suggested_questions = benchmark_q_map[current_doc.doc_id]
+            else:
+                # 1. Inspect Tables in document
+                for p in current_doc.pages:
+                    for t in p.tables:
+                        if len(t.headers) >= 4 and any("duration" in h.lower() for h in t.headers):
+                            suggested_questions.append("What is the duration of Round 1?")
+                        if any("banking" in str(r).lower() for r in t.rows):
+                            suggested_questions.append("What does Investment Banking do in CIB Division?")
+                        if t.headers and len(t.headers) >= 2 and t.rows:
+                            suggested_questions.append(f"What is the {t.headers[1]} for {t.rows[0][0]} in {t.title or 'the table'}?")
+
+                # 2. Inspect Text / Document Headings
+                for p in current_doc.pages:
+                    if p.text_chunks:
+                        first_chunk = p.text_chunks[0].text
+                        if "study plan" in first_chunk.lower() or "prepared" in first_chunk.lower() or "·" in first_chunk:
+                            suggested_questions.insert(0, "Who is this study plan prepared for?")
+                            suggested_questions.insert(1, "What are the phases covered in this document?")
+                        elif "resume" in first_chunk.lower() or "curriculum" in first_chunk.lower():
+                            suggested_questions.insert(0, "Who is the candidate in this resume?")
+                        elif "invoice" in first_chunk.lower():
+                            suggested_questions.insert(0, "What is the final balance due?")
+
+                # Deduplicate and fallback
+                seen_q = set()
+                dedup_q = []
+                for sq in suggested_questions:
+                    if sq not in seen_q:
+                        seen_q.add(sq)
+                        dedup_q.append(sq)
+                suggested_questions = dedup_q[:5]
+
+                if not suggested_questions:
+                    suggested_questions = [
+                        "What is the main topic of this document?",
+                        "What are the key points mentioned in this document?",
+                        "What data is presented in the tables?"
+                    ]
+
+            # Display suggested question chips
+            st.markdown("**💡 Suggested Contextual Questions for this Document:**")
+            q_cols = st.columns(min(len(suggested_questions), 4))
+            for i, sq in enumerate(suggested_questions[:4]):
+                if q_cols[i].button(sq, key=f"sq_btn_{i}", use_container_width=True):
+                    st.session_state["active_question"] = sq
+
+            default_question = st.session_state.get("active_question", suggested_questions[0] if suggested_questions else "")
 
             user_question = st.text_input(
                 "Enter question regarding this document:",
-                value=prefill_q or "What was the total revenue in Q3 2025?",
+                value=default_question,
                 key="doc_q_input"
             )
 
