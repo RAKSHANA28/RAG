@@ -205,9 +205,32 @@ def main():
         doc_samples = [s for s in all_benchmark_samples if s["doc_id"] == selected_doc_id]
         sample_questions = [s["question"] for s in doc_samples]
 
-        with col_t2:
-            selected_train_q = st.selectbox("Select Training Question:", sample_questions)
+        # Manage training question state
+        if "train_q_selection" not in st.session_state or st.session_state.get("last_train_doc_id") != selected_doc_id:
+            st.session_state["last_train_doc_id"] = selected_doc_id
+            st.session_state["train_q_selection"] = sample_questions[0] if sample_questions else ""
 
+        with col_t2:
+            dropdown_q = st.selectbox(
+                "Select Training Question:",
+                sample_questions,
+                index=sample_questions.index(st.session_state["train_q_selection"]) if st.session_state["train_q_selection"] in sample_questions else 0,
+                key="train_dropdown"
+            )
+            if dropdown_q != st.session_state["train_q_selection"]:
+                st.session_state["train_q_selection"] = dropdown_q
+
+        # Clickable training question chips for instant 1-click execution
+        st.markdown("**Quick-Select Training Question (Click to Answer):**")
+        t_cols = st.columns(min(len(sample_questions), 3))
+        clicked_train_q = None
+        for t_idx, t_q in enumerate(sample_questions[:6]):
+            col_target = t_cols[t_idx % len(t_cols)]
+            if col_target.button(t_q, key=f"t_chip_{selected_doc_id}_{t_idx}", use_container_width=True):
+                clicked_train_q = t_q
+                st.session_state["train_q_selection"] = t_q
+
+        selected_train_q = clicked_train_q or st.session_state["train_q_selection"]
         current_sample = next((s for s in doc_samples if s["question"] == selected_train_q), doc_samples[0])
 
         # Ingest document
@@ -229,7 +252,9 @@ def main():
                         st.image(Image.open(page.image_path), use_container_width=True)
                     st.caption(f"Text Chunks: {len(page.text_chunks)} | Tables: {len(page.tables)} | Visuals: {len(page.images)}")
 
-        if st.button("Evaluate Training Question with AQU-MR", type="primary", key="btn_train_eval"):
+        run_train_eval = st.button("Evaluate Training Question with AQU-MR", type="primary", key="btn_train_eval", use_container_width=True) or bool(clicked_train_q)
+
+        if run_train_eval:
             with st.spinner("Analyzing question, retrieving cross-modal evidence, and validating grounding..."):
                 # 1. Query Analysis
                 q_contract = analyzer.analyze(selected_train_q)
@@ -381,48 +406,60 @@ def main():
             # Dynamic Question Generator
             suggested_questions = DocumentQuestionGenerator.generate_questions(active_unseen_doc, max_questions=4)
 
-            # Auto-reset question input if a new document is loaded
-            if st.session_state.get("last_unseen_id") != active_unseen_doc.doc_id:
-                st.session_state["last_unseen_id"] = active_unseen_doc.doc_id
-                st.session_state["unseen_q_input"] = suggested_questions[0] if suggested_questions else ""
-
-            def apply_unseen_question(q_text: str):
-                st.session_state["unseen_q_input"] = q_text
+            # Manage question state seamlessly
+            if "unseen_question_text" not in st.session_state or st.session_state.get("last_unseen_doc_id") != active_unseen_doc.doc_id:
+                st.session_state["last_unseen_doc_id"] = active_unseen_doc.doc_id
+                st.session_state["unseen_question_text"] = suggested_questions[0] if suggested_questions else ""
 
             st.markdown("---")
-            st.markdown("**Suggested Contextual Questions for this Document (Click to Select):**")
+            st.markdown("**Suggested Contextual Questions (Click any question to instantly answer):**")
             s_cols = st.columns(min(len(suggested_questions), 4))
+            clicked_question = None
             for s_idx, sq in enumerate(suggested_questions[:4]):
-                s_cols[s_idx].button(
+                if s_cols[s_idx].button(
                     sq,
-                    key=f"unseen_btn_{active_unseen_doc.doc_id}_{s_idx}",
-                    on_click=apply_unseen_question,
-                    args=(sq,),
+                    key=f"unseen_chip_{active_unseen_doc.doc_id}_{s_idx}",
                     use_container_width=True
-                )
+                ):
+                    clicked_question = sq
+                    st.session_state["unseen_question_text"] = sq
 
-            unseen_question = st.text_input(
-                "Enter question regarding this document:",
-                key="unseen_q_input"
+            # Effective question text
+            if clicked_question:
+                active_question = clicked_question
+            else:
+                active_question = st.session_state.get("unseen_question_text", "")
+
+            user_question = st.text_input(
+                "Or enter your custom question regarding this document:",
+                value=active_question,
+                key=f"unseen_text_input_{active_unseen_doc.doc_id}"
             )
 
-            if st.button("Answer Question & Compare Modalities", type="primary", key="btn_unseen_eval", use_container_width=True):
-                if not unseen_question.strip():
+            # Sync user typing to state
+            if user_question != st.session_state.get("unseen_question_text"):
+                st.session_state["unseen_question_text"] = user_question
+
+            effective_question = clicked_question or user_question
+            run_unseen_qa = st.button("Answer Question & Compare Modalities", type="primary", key="btn_unseen_eval", use_container_width=True) or bool(clicked_question)
+
+            if run_unseen_qa:
+                if not effective_question.strip():
                     st.warning("Please enter a question.")
                 else:
                     with st.spinner("Analyzing question, retrieving cross-modal evidence, and comparing modality candidates..."):
                         # 1. Query Analysis
-                        q_contract = analyzer.analyze(unseen_question)
+                        q_contract = analyzer.analyze(effective_question)
 
                         # 2. Retrieval & Fusion
-                        selected_evidence, ranked_pages, _ = retriever.retrieve(unseen_question, q_contract)
+                        selected_evidence, ranked_pages, _ = retriever.retrieve(effective_question, q_contract)
 
                         # 3. Evidence Packet
-                        packet = builder.build_packet(unseen_question, q_contract, selected_evidence)
+                        packet = builder.build_packet(effective_question, q_contract, selected_evidence)
 
                         # 4. Grounded Generation & Cross-Modality Selection
                         generator.provider = resolved_provider
-                        unseen_ans = generator.generate(unseen_question, q_contract, packet)
+                        unseen_ans = generator.generate(effective_question, q_contract, packet)
 
                         # 5. Validation
                         val_res = validator.validate(unseen_ans, packet)
@@ -490,7 +527,7 @@ def main():
                     st.markdown(f"""
                     <div class="answer-hero">
                         <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 8px;">
-                            Question: {unseen_question}
+                            Question: {effective_question}
                         </div>
                         <div style="font-size: 1.35rem; font-weight: 600; color: #38bdf8; margin-bottom: 12px;">
                             {unseen_ans.answer_text}
