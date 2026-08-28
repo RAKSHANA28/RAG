@@ -41,7 +41,7 @@ class DebugTracer:
 
     def print_summary(self):
         print("\n" + "=" * 60)
-        print("🔍 AQU-MR Execution Debug Summary")
+        print("[DEBUG] AQU-MR Execution Lifecycle Summary")
         print("=" * 60)
         for event in self.events:
             print(f"[{event['stage']}]: {str(event['data'])[:120]}...")

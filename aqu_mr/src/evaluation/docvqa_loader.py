@@ -66,7 +66,7 @@ class DocVQABenchmarkLoader:
                     "2. Independent Auditor Opinion:\n"
                     "The consolidated statements present fairly in all material respects the financial position.\n"
                     "Approved by the Board of Directors on October 24, 2025.\n\n"
-                    "★ OFFICIAL CORPORATE SEAL ★\n"
+                    "OFFICIAL CORPORATE SEAL\n"
                     "Apex Global Enterprises\n"
                     "Status: Verified & Validated\n\n"
                     "Executive Sign-Off:\n"
@@ -386,7 +386,7 @@ class DocVQABenchmarkLoader:
 
         # Visual seal / stamp box
         d2.rectangle([(40, 250), (250, 400)], outline=(37, 99, 235), width=3)
-        d2.text((60, 270), "★ OFFICIAL CORPORATE SEAL ★", fill=(37, 99, 235))
+        d2.text((60, 270), "OFFICIAL CORPORATE SEAL", fill=(37, 99, 235))
         d2.text((60, 310), "Apex Global Enterprises", fill=(15, 23, 42))
         d2.text((60, 340), "Status: Verified & Validated", fill=(16, 185, 129))
 

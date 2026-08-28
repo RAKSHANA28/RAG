@@ -76,24 +76,24 @@ def run_query(doc_path: str, question: str, debug: bool = False, provider: str =
     if debug:
         tracer.print_summary()
         print("\n" + "=" * 60)
-        print("📄 FULL EVIDENCE PACKET SUPPLIED TO GENERATOR")
+        print("[EVIDENCE] Multimodal Evidence Packet Supplied to Generator")
         print("=" * 60)
         print(evidence_packet.raw_evidence_text)
         print("=" * 60 + "\n")
 
-    print("\n" + "✨" * 30)
-    print(f"❓ Question: {question}")
-    print(f"💡 Grounded Answer: {answer.answer_text}")
-    print(f"📖 Source Pages: {answer.source_pages}")
-    print(f"🎯 Confidence: {answer.confidence:.1%}")
-    print(f"🛡️  Validation Status: {'PASSED ✅' if val_res.is_valid else 'FLAGGED ⚠️'} (Grounding Score: {val_res.grounding_score:.2f})")
-    print(f"🧠 Reasoning: {answer.reasoning_trace}")
-    print("✨" * 30 + "\n")
+    print("\n" + "-" * 60)
+    print(f"Question: {question}")
+    print(f"Grounded Answer: {answer.answer_text}")
+    print(f"Source Pages: {answer.source_pages}")
+    print(f"Confidence: {answer.confidence:.1%}")
+    print(f"Validation Status: {'PASSED' if val_res.is_valid else 'FLAGGED'} (Grounding Score: {val_res.grounding_score:.2f})")
+    print(f"Reasoning Trace: {answer.reasoning_trace}")
+    print("-" * 60 + "\n")
 
 
 def run_benchmark(sample_limit: int = None):
     print("=" * 60)
-    print("🚀 Running AQU-MR Benchmark Evaluation on DocVQA-2026")
+    print("[BENCHMARK] AQU-MR Evaluation on DocVQA-2026")
     print("=" * 60)
 
     print("\n1. Evaluating Retrieval Modalities (Recall@K & MRR)...")

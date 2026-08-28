@@ -1,7 +1,7 @@
 """
-AQU-MR: Interactive Streamlit Web Application
-Adaptive Query Understanding & Modality-Aware Retrieval for Multimodal Document QA
-Dataset: VLR-CVC/DocVQA-2026
+AQU-MR: Multimodal Document Question Answering System
+Adaptive Query Understanding and Modality-Aware Retrieval for Zero-Hallucination Document QA
+Benchmark Dataset: VLR-CVC/DocVQA-2026
 """
 
 import os
@@ -24,18 +24,18 @@ from src.generation.answer_validator import AnswerValidator
 from src.evaluation.docvqa_loader import DocVQABenchmarkLoader
 from src.evaluation.evaluate_qa import QAEvaluator
 from src.evaluation.evaluate_retrieval import RetrievalEvaluator
-from src.utils.schemas import ModalityType, Document
+from src.evaluation.metrics import calculate_anls, calculate_exact_match, calculate_f1_score
+from src.utils.schemas import ModalityType, Document, GroundedAnswer
 from src.utils.question_generator import DocumentQuestionGenerator
 
 # Set Streamlit Page Configuration
 st.set_page_config(
     page_title="AQU-MR | Multimodal Document QA",
-    page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for rich aesthetics and clean dark-accented UI
+# Clean CSS for professional enterprise design (Zero emojis)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -45,69 +45,58 @@ st.markdown("""
     }
     
     .main-header {
-        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
         color: white;
-        padding: 24px 30px;
-        border-radius: 16px;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 25px -5px rgba(49, 46, 129, 0.3);
-    }
-    
-    .metric-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 16px 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        padding: 22px 28px;
+        border-radius: 14px;
+        margin-bottom: 22px;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
     }
     
     .answer-hero {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: white;
-        padding: 24px 28px;
-        border-radius: 14px;
-        border-left: 6px solid #38bdf8;
-        margin: 18px 0;
-        box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.3);
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 20px 24px;
+        border-radius: 12px;
+        border-left: 5px solid #0284c7;
+        margin: 16px 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     
+    .modality-badge {
+        display: inline-block;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        margin-right: 6px;
+    }
+    .modality-badge-table { background: #dcfce7; color: #166534; }
+    .modality-badge-text { background: #dbeafe; color: #1e40af; }
+    .modality-badge-visual { background: #fef3c7; color: #92400e; }
+    .modality-badge-winner { background: #0284c7; color: #ffffff; }
+
     .provenance-tag {
         display: inline-block;
-        background: #0284c7;
-        color: white;
+        background: #334155;
+        color: #f8fafc;
         font-weight: 600;
-        padding: 4px 10px;
+        padding: 3px 9px;
         border-radius: 6px;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         margin-right: 6px;
     }
     
     .validation-badge {
         display: inline-block;
-        background: #059669;
-        color: white;
         font-weight: 600;
         padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        border-radius: 16px;
+        font-size: 0.82rem;
     }
-    
-    .modality-pill {
-        display: inline-block;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-    .modality-text { background: #dbeafe; color: #1e40af; }
-    .modality-table { background: #dcfce7; color: #166534; }
-    .modality-image { background: #fef3c7; color: #92400e; }
+    .validation-pass { background: #059669; color: #ffffff; }
+    .validation-flag { background: #dc2626; color: #ffffff; }
     
     .stTabs [data-baseweb="tab-list"] {
         gap: 12px;
@@ -123,7 +112,7 @@ st.markdown("""
 
 @st.cache_resource
 def get_pipeline():
-    """Initializes and caches the multimodal pipeline components."""
+    """Initializes and caches multimodal pipeline components."""
     loader = DocumentLoader()
     analyzer = QueryAnalyzer()
     retriever = MultimodalRetriever()
@@ -137,34 +126,34 @@ def get_pipeline():
 def main():
     loader, analyzer, retriever, builder, generator, validator, benchmark_loader = get_pipeline()
 
-    # App Header Banner
+    # Application Header
     st.markdown("""
     <div class="main-header">
-        <h1 style="margin:0; font-size: 2.2rem; font-weight: 700; display:flex; align-items:center; gap: 12px;">
-            <span>🧠</span> AQU-MR: Multimodal Document QA
-        </h1>
-        <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 1.05rem;">
-            <strong>A</strong>daptive <strong>Q</strong>uery <strong>U</strong>nderstanding & <strong>M</strong>odality-Aware <strong>R</strong>etrieval for Zero-Hallucination Document Question Answering
+        <h2 style="margin:0; font-weight: 700; letter-spacing: -0.5px;">
+            AQU-MR: Adaptive Query Understanding & Modality-Aware Retrieval
+        </h2>
+        <p style="margin: 6px 0 0 0; opacity: 0.9; font-size: 0.98rem;">
+            Multimodal Document Question Answering System with Cross-Modal Answer Selection and Zero-Hallucination Grounding
         </p>
-        <div style="margin-top: 12px; display:flex; gap:12px; font-size:0.85rem; opacity:0.85;">
-            <span>📌 Benchmark: <strong>VLR-CVC / DocVQA-2026</strong></span>
-            <span>•</span>
-            <span>⚡ Modalities: <strong>Text + Tables + Images</strong></span>
-            <span>•</span>
-            <span>🛡️ <strong>Zero-Hallucination Grounding</strong></span>
+        <div style="margin-top: 10px; display:flex; gap:16px; font-size:0.82rem; opacity:0.85;">
+            <span>Benchmark: <strong>VLR-CVC / DocVQA-2026</strong></span>
+            <span>|</span>
+            <span>Modalities: <strong>Text, Tables, Images</strong></span>
+            <span>|</span>
+            <span>Grounding: <strong>Strict Provenance Verification</strong></span>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Sidebar Navigation and Configuration
+    # Sidebar Configuration
     with st.sidebar:
-        st.header("⚙️ Pipeline Configuration")
+        st.header("Pipeline Configuration")
         
         provider = st.selectbox(
             "Generation Engine",
             ["Deterministic Extractive QA (Zero Hallucination)", "Google Gemini VLM", "OpenAI GPT-4o"],
             index=0,
-            help="Extractive QA runs locally with zero external API calls. Gemini/OpenAI use API keys if present."
+            help="Extractive QA runs locally with zero external API calls. Gemini/OpenAI use API keys if provided."
         )
         resolved_provider = "extractive" if "Deterministic" in provider else ("gemini" if "Gemini" in provider else "openai")
 
@@ -174,349 +163,443 @@ def main():
                 os.environ["GEMINI_API_KEY"] = api_key
 
         st.markdown("---")
-        st.subheader("🔍 Modality Retrieval Weights")
+        st.subheader("Modality Retrieval Priors")
         st.caption("AQU dynamically computes soft modality weights for every question:")
-        st.markdown("• **Text Prior**: BM25 + Dense Semantic Chunks")
-        st.markdown("• **Table Prior**: 2D Cell & Header Preservation")
-        st.markdown("• **Image Prior**: Visual Features + OCR Context")
+        st.markdown("- **Text Prior**: Hybrid BM25 and Dense Semantic Vectors")
+        st.markdown("- **Table Prior**: 2D Cell Matrix and Coordinate Preservation")
+        st.markdown("- **Image Prior**: Visual Embeddings and OCR Context")
 
         st.markdown("---")
-        st.info("💡 **Grounded Provenance**: Answers strictly reference source pages, table cell coordinates, and visual layouts.")
+        st.caption("Grounded Provenance: Answers strictly reference source pages, table cell coordinates, and visual layouts.")
 
-    # Tab Navigation
+    # Main Tab Navigation
     tab1, tab2, tab3 = st.tabs([
-        "💬 Interactive Q&A Explorer",
-        "📊 DocVQA-2026 Benchmark & Metrics",
-        "📐 System Architecture & Methods"
+        "1. Training Dataset QA & Grounding Evaluation",
+        "2. Unseen Document Multimodal QA & Selection",
+        "3. System Architecture & Methods Reference"
     ])
 
     # =========================================================================
-    # TAB 1: INTERACTIVE Q&A EXPLORER
+    # TAB 1: TRAINING DATASET QA & GROUNDING EVALUATION
     # =========================================================================
     with tab1:
-        st.subheader("1. Document Ingestion & Document Selection")
-        
-        doc_source = st.radio(
-            "Select Document Source:",
-            ["Use Built-in DocVQA-2026 Benchmark Samples", "Upload Unseen Document (PDF, Image, Word, Text)"],
-            horizontal=True
+        st.subheader("Training Dataset Questions & Grounding Answer Evaluation")
+        st.markdown(
+            "Select and execute question answering on official DocVQA-2026 benchmark training samples. "
+            "Evaluates predictions against gold ground truth, verifies source provenance, and computes ANLS/F1 metrics."
         )
 
-        current_doc: Optional[Document] = None
+        all_benchmark_samples = benchmark_loader.load_samples()
+        doc_categories = {
+            "Apex Global Enterprises (Financial Report - Q3 2025)": "fin_report_2025",
+            "BioMed Research Institute (Phase 3 Clinical Trial Report)": "clinical_study_09",
+            "Nexus Logistics (Commercial Invoice 88921)": "invoice_88921"
+        }
 
-        if doc_source == "Use Built-in DocVQA-2026 Benchmark Samples":
-            samples = benchmark_loader.load_samples()
-            sample_docs = {
-                "Apex Global Enterprises (Financial Report - Q3 2025)": "fin_report_2025",
-                "BioMed Research Institute (Phase 3 Clinical Trial Report)": "clinical_study_09",
-                "Nexus Logistics (Commercial Invoice #88921)": "invoice_88921"
-            }
-            selected_doc_name = st.selectbox("Choose Benchmark Document:", list(sample_docs.keys()))
-            selected_doc_id = sample_docs[selected_doc_name]
+        col_t1, col_t2 = st.columns([1, 1.5])
+        with col_t1:
+            selected_doc_label = st.selectbox("Select Training Document:", list(doc_categories.keys()))
+            selected_doc_id = doc_categories[selected_doc_label]
 
-            # Find matching sample
-            sample_item = next((s for s in samples if s["doc_id"] == selected_doc_id), None)
-            if sample_item:
-                with st.spinner("Ingesting benchmark page images, OCR, and table structures..."):
-                    current_doc = loader.from_docvqa_images(
-                        doc_id=selected_doc_id,
-                        page_images=sample_item["page_images"],
-                        ocr_annotations=sample_item.get("ocr_annotations")
-                    )
-        else:
-            uploaded_file = st.file_uploader(
-                "Upload an unseen document (PDF, PNG, JPG, DOCX, TXT):",
-                type=["pdf", "png", "jpg", "jpeg", "docx", "txt"]
+        # Filter samples for the selected training document
+        doc_samples = [s for s in all_benchmark_samples if s["doc_id"] == selected_doc_id]
+        sample_questions = [s["question"] for s in doc_samples]
+
+        with col_t2:
+            selected_train_q = st.selectbox("Select Training Question:", sample_questions)
+
+        current_sample = next((s for s in doc_samples if s["question"] == selected_train_q), doc_samples[0])
+
+        # Ingest document
+        with st.spinner("Ingesting document modalities..."):
+            train_doc = loader.from_docvqa_images(
+                doc_id=selected_doc_id,
+                page_images=current_sample["page_images"],
+                ocr_annotations=current_sample.get("ocr_annotations")
             )
-            if uploaded_file is not None:
-                with st.spinner(f"Ingesting and indexing '{uploaded_file.name}'..."):
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{uploaded_file.name}") as tmp:
-                        tmp.write(uploaded_file.getbuffer())
-                        tmp_path = tmp.name
-                    
-                    try:
-                        current_doc = loader.load_document(tmp_path)
-                        st.success(f"Successfully processed **{uploaded_file.name}** ({current_doc.total_pages} pages)")
-                    except Exception as e:
-                        st.error(f"Error loading document: {e}")
+            retriever.index_document(train_doc)
 
-        # Display Document Overview & Page Carousels
-        if current_doc:
-            retriever.index_document(current_doc)
-            
-            with st.expander(f"📄 View Document Overview: {current_doc.file_name} ({current_doc.total_pages} Pages)", expanded=True):
-                cols = st.columns(min(current_doc.total_pages, 3))
-                for idx, page in enumerate(current_doc.pages):
-                    col = cols[idx % len(cols)]
-                    with col:
-                        st.markdown(f"**Page {page.page_num}**")
-                        if page.image_path and os.path.exists(page.image_path):
-                            img = Image.open(page.image_path)
-                            st.image(img, use_container_width=True)
-                        st.caption(f"📝 {len(page.text_chunks)} Chunks | 📊 {len(page.tables)} Tables | 🖼️ {len(page.images)} Visuals")
+        # Document overview expander
+        with st.expander(f"Document Overview: {selected_doc_label} ({train_doc.total_pages} Pages)", expanded=False):
+            page_cols = st.columns(max(len(train_doc.pages), 1))
+            for p_idx, page in enumerate(train_doc.pages):
+                with page_cols[p_idx]:
+                    st.markdown(f"**Page {page.page_num}**")
+                    if page.image_path and os.path.exists(page.image_path):
+                        st.image(Image.open(page.image_path), use_container_width=True)
+                    st.caption(f"Text Chunks: {len(page.text_chunks)} | Tables: {len(page.tables)} | Visuals: {len(page.images)}")
+
+        if st.button("Evaluate Training Question with AQU-MR", type="primary", key="btn_train_eval"):
+            with st.spinner("Analyzing question, retrieving cross-modal evidence, and validating grounding..."):
+                # 1. Query Analysis
+                q_contract = analyzer.analyze(selected_train_q)
+
+                # 2. Retrieval & Fusion
+                selected_evidence, ranked_pages, _ = retriever.retrieve(selected_train_q, q_contract)
+
+                # 3. Evidence Packet
+                packet = builder.build_packet(selected_train_q, q_contract, selected_evidence)
+
+                # 4. Answer Generation
+                generator.provider = resolved_provider
+                train_ans = generator.generate(selected_train_q, q_contract, packet)
+
+                # 5. Validation
+                val_res = validator.validate(train_ans, packet)
+
+                # 6. Evaluation metrics for this sample
+                gold_answers = current_sample["answers"]
+                sample_anls = calculate_anls(train_ans.answer_text, gold_answers)
+                sample_em = calculate_exact_match(train_ans.answer_text, gold_answers)
+                sample_f1 = calculate_f1_score(train_ans.answer_text, gold_answers)
 
             st.markdown("---")
-            st.subheader("2. Ask a Question")
-
-            # Sample questions map for benchmark docs
-            benchmark_q_map = {
-                "fin_report_2025": [
-                    "What was the total revenue in Q3 2025?",
-                    "Who is the Chief Financial Officer who signed the audit report?",
-                    "What is the corporate seal status on page 2?",
-                    "What is the projected revenue for the year 2040?"
-                ],
-                "clinical_study_09": [
-                    "What is the reported efficacy rate for Cohort B in the Phase 3 trial?",
-                    "What color indicates the control group in the clinical trial figure?",
-                    "How many patients were enrolled in Cohort A?"
-                ],
-                "invoice_88921": [
-                    "What is the final invoice balance due?",
-                    "What is the payment due date for invoice 88921?",
-                    "What is the price of Enterprise Cloud Routing Cluster?"
-                ]
-            }
-
-            # Generate dynamic suggested questions for uploaded or benchmark documents
-            suggested_questions = DocumentQuestionGenerator.generate_questions(current_doc, max_questions=4)
-
-            # Auto-reset question input if a new document is loaded
-            if st.session_state.get("last_doc_id") != current_doc.doc_id:
-                st.session_state["last_doc_id"] = current_doc.doc_id
-                st.session_state["doc_q_input"] = suggested_questions[0] if suggested_questions else ""
-
-            def apply_suggested_question(q_str: str):
-                st.session_state["doc_q_input"] = q_str
-
-            # Display suggested question chips
-            st.markdown("**💡 Suggested Contextual Questions for this Document (Click to Select):**")
-            q_cols = st.columns(min(len(suggested_questions), 4))
-            for i, sq in enumerate(suggested_questions[:4]):
-                q_cols[i].button(
-                    sq,
-                    key=f"sq_btn_{current_doc.doc_id}_{i}",
-                    on_click=apply_suggested_question,
-                    args=(sq,),
-                    use_container_width=True
-                )
-
-            user_question = st.text_input(
-                "Enter question regarding this document:",
-                key="doc_q_input"
-            )
-
-            if st.button("🚀 Answer Question with AQU-MR", type="primary", use_container_width=True):
-                if not user_question.strip():
-                    st.warning("Please enter a question.")
-                else:
-                    with st.spinner("Analyzing query, retrieving multimodal evidence, and verifying grounding..."):
-                        # 1. Query Understanding
-                        q_contract = analyzer.analyze(user_question)
-
-                        # 2. Modality Retrieval & Soft Fusion
-                        selected_evidence, ranked_pages, fusion_debug = retriever.retrieve(user_question, q_contract)
-
-                        # 3. Evidence Building
-                        evidence_packet = builder.build_packet(user_question, q_contract, selected_evidence)
-
-                        # 4. Grounded Generation
-                        generator.provider = resolved_provider
-                        answer = generator.generate(user_question, q_contract, evidence_packet)
-
-                        # 5. Validation
-                        val_result = validator.validate(answer, evidence_packet)
-
-                    # =========================================================
-                    # Display Results
-                    # =========================================================
-                    
-                    # 1. Adaptive Query Understanding (AQU) Card
-                    st.markdown("### 🔍 Adaptive Query Understanding (AQU) Contract")
-                    q_col1, q_col2, q_col3, q_col4 = st.columns(4)
-                    with q_col1:
-                        st.metric("Detected Intent", q_contract.intent.value)
-                    with q_col2:
-                        st.metric("Expected Type", q_contract.expected_answer_type)
-                    with q_col3:
-                        st.metric("Key Entities", ", ".join(q_contract.key_entities) if q_contract.key_entities else "None")
-                    with q_col4:
-                        st.metric("Top Ranked Page", f"Page {ranked_pages[0]}" if ranked_pages else "N/A")
-
-                    # Modality Weights Bars
-                    st.markdown("**Soft Modality Routing Confidence:**")
-                    mw = q_contract.modality_weights
-                    w_col1, w_col2, w_col3 = st.columns(3)
-                    with w_col1:
-                        st.progress(mw.get("text", 0.33), text=f"Text Weight: {mw.get('text', 0.33):.1%}")
-                    with w_col2:
-                        st.progress(mw.get("table", 0.33), text=f"Table Weight: {mw.get('table', 0.33):.1%}")
-                    with w_col3:
-                        st.progress(mw.get("image", 0.33), text=f"Visual Weight: {mw.get('image', 0.33):.1%}")
-
-                    # 2. Grounded Answer Hero Card
-                    st.markdown("### 💡 Grounded Answer")
-                    provenance_html = " ".join([f'<span class="provenance-tag">📄 Page {p}</span>' for p in answer.source_pages])
-                    validation_html = (
-                        '<span class="validation-badge" style="background:#059669;">🛡️ Grounding Verified (Score: ' + f'{val_result.grounding_score:.2f})</span>'
-                        if val_result.is_valid else
-                        '<span class="validation-badge" style="background:#dc2626;">⚠️ Grounding Warning</span>'
-                    )
-
-                    st.markdown(f"""
-                    <div class="answer-hero">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-                            <div>{provenance_html}</div>
-                            <div>{validation_html}</div>
-                        </div>
-                        <h2 style="color:#ffffff; margin:0 0 12px 0; font-size:1.8rem; font-weight:700;">
-                            {answer.answer_text}
-                        </h2>
-                        <div style="font-size:0.95rem; opacity:0.9; line-height:1.5;">
-                            <strong>Reasoning Trace:</strong> {answer.reasoning_trace}
-                        </div>
+            st.markdown("### Grounded Answer & Evaluation Metrics")
+            
+            # Grounded Answer Display
+            ans_col1, ans_col2 = st.columns([2, 1])
+            with ans_col1:
+                provenance_str = " ".join([f'<span class="provenance-tag">Page {p}</span>' for p in train_ans.source_pages])
+                val_class = "validation-pass" if val_res.is_valid else "validation-flag"
+                val_text = f"Grounding Verified (Score: {val_res.grounding_score:.2f})" if val_res.is_valid else "Grounding Flagged"
+                
+                st.markdown(f"""
+                <div class="answer-hero">
+                    <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 8px;">
+                        Target Question: {selected_train_q}
                     </div>
-                    """, unsafe_allow_html=True)
+                    <div style="font-size: 1.35rem; font-weight: 600; color: #38bdf8; margin-bottom: 12px;">
+                        {train_ans.answer_text}
+                    </div>
+                    <div style="display:flex; align-items:center; gap: 8px; margin-top: 10px;">
+                        {provenance_str}
+                        <span class="validation-badge {val_class}">{val_text}</span>
+                        <span style="font-size: 0.85rem; opacity:0.85;">Confidence: {train_ans.confidence:.1%}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                st.caption(f"Reasoning Trace: {train_ans.reasoning_trace}")
 
-                    # 3. Multimodal Evidence Inspector
-                    st.markdown("### 📦 Selected Multimodal Evidence")
-                    
-                    ev_tabs = st.tabs(["📊 Table Evidence", "📝 Text Evidence", "🖼️ Visual / Image Evidence", "📜 Raw Evidence Packet"])
-                    
-                    with ev_tabs[0]:
-                        table_items = [it for it in selected_evidence if it.modality == ModalityType.TABLE]
-                        if table_items:
-                            for it in table_items:
-                                st.markdown(f"#### Page {it.page_num} - {it.evidence_id}")
-                                st.markdown(it.content)
-                                if it.provenance_details.get("matched_cells"):
-                                    st.caption(f"Matched Candidate Cells: {it.provenance_details['matched_cells'][:3]}")
-                        else:
-                            st.info("No table evidence retrieved for this question.")
+            with ans_col2:
+                st.markdown("**Sample Grounding Evaluation:**")
+                st.metric("ANLS Score", f"{sample_anls:.3f}")
+                st.metric("Exact Match (EM)", f"{sample_em:.1%}")
+                st.metric("Token F1 Score", f"{sample_f1:.3f}")
+                st.caption(f"Gold Ground Truth: {gold_answers[0]}")
 
-                    with ev_tabs[1]:
-                        text_items = [it for it in selected_evidence if it.modality == ModalityType.TEXT]
-                        if text_items:
-                            for it in text_items:
-                                st.markdown(f"#### Page {it.page_num} Text Chunk ({it.evidence_id})")
-                                st.info(it.content)
-                                st.caption(f"Hybrid Score: {it.score} | BM25: {it.provenance_details.get('bm25_score', 0):.2f}")
-                        else:
-                            st.info("No text chunk evidence retrieved for this question.")
+            # Evidence breakdown
+            with st.expander("Supporting Evidence Details", expanded=False):
+                st.text(packet.raw_evidence_text)
 
-                    with ev_tabs[2]:
-                        img_items = [it for it in selected_evidence if it.modality == ModalityType.IMAGE]
-                        if img_items:
-                            for it in img_items:
-                                st.markdown(f"#### Page {it.page_num} Visual Evidence")
-                                if os.path.exists(it.content):
-                                    st.image(Image.open(it.content), width=450)
-                                st.caption(f"Visual Score: {it.score} | OCR Context: {it.provenance_details.get('ocr_snippet', '')}")
-                        else:
-                            st.info("No image evidence retrieved for this question.")
+        st.markdown("---")
+        st.subheader("Complete Training Benchmark Evaluation Suite")
+        st.markdown("Run automated evaluation across all 18 benchmark samples to compute global metrics.")
 
-                    with ev_tabs[3]:
-                        st.text_area("Full Raw Evidence Packet", value=evidence_packet.raw_evidence_text, height=250)
-
-                    # 4. Debug Drawer
-                    with st.expander("🛠️ Full Debug Execution Trace"):
-                        st.json({
-                            "query": user_question,
-                            "query_contract": q_contract.raw_analysis,
-                            "fusion_scores": fusion_debug.get("page_fusion_scores"),
-                            "ranked_pages": ranked_pages,
-                            "validation": {
-                                "is_valid": val_result.is_valid,
-                                "grounding_score": val_result.grounding_score,
-                                "numerical_passed": val_result.numerical_passed,
-                                "entity_passed": val_result.entity_support_passed,
-                                "unsupported_claims": val_result.unsupported_claims
-                            }
-                        })
-
-    # =========================================================
-    # TAB 2: BENCHMARK & METRICS DASHBOARD
-    # =========================================================
-    with tab2:
-        st.subheader("📊 DocVQA-2026 Official Benchmark Evaluation")
-        st.markdown(
-            "Evaluates **AQU-MR** against official DocVQA-2026 multi-modal document question answering benchmarks. "
-            "Includes **ANLS (Average Normalized Levenshtein Similarity)**, Exact Match, Hallucination Rate, and Modality-level breakdowns."
-        )
-
-        if st.button("▶️ Run Complete DocVQA-2026 Benchmark Evaluation", type="primary"):
-            with st.spinner("Running full evaluation across text, table, visual, and unanswerable samples..."):
+        if st.button("Run Full Benchmark Suite Evaluation", key="btn_full_suite"):
+            with st.spinner("Evaluating full benchmark suite across all document modalities..."):
                 qa_eval = QAEvaluator()
                 ret_eval = RetrievalEvaluator()
                 qa_summary = qa_eval.evaluate_benchmark()
                 ret_summary = ret_eval.evaluate_benchmark()
 
-            st.markdown("### 🏆 Overall Benchmark Metrics")
-            m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-            with m_col1:
-                st.metric("ANLS Score", f"{qa_summary['ANLS']:.3f}", help="DocVQA Official ANLS Metric (0-1)")
-            with m_col2:
+            # Global Metrics Cards
+            m1, m2, m3, m4 = st.columns(4)
+            with m1:
+                st.metric("Overall ANLS Score", f"{qa_summary['ANLS']:.3f}")
+            with m2:
                 st.metric("Exact Match (EM)", f"{qa_summary['Exact_Match']:.1%}")
-            with m_col3:
-                st.metric("Hallucination Rate", f"{qa_summary['Hallucination_Rate']:.1%}", delta="0.0% (Zero Hallucination)", delta_color="normal")
-            with m_col4:
-                st.metric("Recall@3", f"{ret_summary['Recall@3']:.1%}")
+            with m3:
+                st.metric("Hallucination Rate", f"{qa_summary['Hallucination_Rate']:.1%}")
+            with m4:
+                st.metric("Retrieval Recall@3", f"{ret_summary['Recall@3']:.1%}")
 
-            st.markdown("---")
-            st.markdown("### 🎯 Modality Performance Breakdown")
+            # Modality Breakdown Table
+            st.markdown("#### Modality-Level Performance Breakdown")
             mod_data = qa_summary.get("Modality_ANLS", {})
             m_df = pd.DataFrame([
-                {"Modality": k.capitalize(), "ANLS Score": v}
+                {"Modality": k.capitalize(), "ANLS Score": f"{v:.3f}", "Evaluation Metric": "DocVQA ANLS"}
                 for k, v in mod_data.items()
             ])
             st.dataframe(m_df, use_container_width=True)
 
-            st.markdown("---")
-            st.markdown("### 📋 Sample Predictions & Ground Truth Alignment")
+            # Detailed Sample Log Table
+            st.markdown("#### Sample Predictions & Ground Truth Alignment")
             preds = qa_summary.get("sample_predictions", [])
             if preds:
                 pred_df = pd.DataFrame(preds)[["question", "prediction", "gold_answers", "modality", "anls", "grounding_score", "is_valid"]]
+                pred_df.columns = ["Question", "Predicted Answer", "Gold Ground Truth", "Modality", "ANLS", "Grounding Score", "Validation Status"]
                 st.dataframe(pred_df, use_container_width=True)
 
-    # =========================================================
-    # TAB 3: SYSTEM ARCHITECTURE & METHODS
-    # =========================================================
+    # =========================================================================
+    # TAB 2: UNSEEN DOCUMENT MULTIMODAL QA & SELECTION
+    # =========================================================================
+    with tab2:
+        st.subheader("Unseen Document Multimodal QA & Cross-Modality Selection")
+        st.markdown(
+            "Upload any unseen document (PDF, Word DOCX, Image, Text). "
+            "AQU-MR extracts candidate answers from **Text**, **Table**, and **Visual** modalities, "
+            "evaluates their grounding scores, and **selects the best modality candidate**."
+        )
+
+        unseen_file = st.file_uploader(
+            "Upload Unseen Document (PDF, DOCX, PNG, JPG, TXT):",
+            type=["pdf", "png", "jpg", "jpeg", "docx", "txt"],
+            key="unseen_uploader"
+        )
+
+        active_unseen_doc: Optional[Document] = None
+
+        if unseen_file is not None:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{unseen_file.name}") as tmp:
+                tmp.write(unseen_file.getvalue())
+                tmp_path = tmp.name
+
+            ext = os.path.splitext(unseen_file.name)[1].lower()
+            with st.spinner(f"Ingesting {unseen_file.name}..."):
+                if ext == ".pdf":
+                    active_unseen_doc = loader.from_pdf(tmp_path)
+                elif ext in [".docx", ".doc"]:
+                    active_unseen_doc = loader.from_docx(tmp_path)
+                elif ext in [".png", ".jpg", ".jpeg"]:
+                    active_unseen_doc = loader.from_image(tmp_path)
+                else:
+                    active_unseen_doc = loader.from_text_file(tmp_path)
+
+            retriever.index_document(active_unseen_doc)
+            st.success(f"Successfully processed {unseen_file.name} ({active_unseen_doc.total_pages} Pages, {len(active_unseen_doc.pages[0].text_chunks)} Chunks, {len(active_unseen_doc.pages[0].tables)} Tables)")
+
+            # Document Overview
+            with st.expander(f"Document Overview: {unseen_file.name}", expanded=False):
+                p_cols = st.columns(max(len(active_unseen_doc.pages), 1))
+                for idx, p in enumerate(active_unseen_doc.pages):
+                    with p_cols[idx]:
+                        st.markdown(f"**Page {p.page_num}**")
+                        if p.image_path and os.path.exists(p.image_path):
+                            st.image(Image.open(p.image_path), use_container_width=True)
+                        st.caption(f"Text Chunks: {len(p.text_chunks)} | Tables: {len(p.tables)} | Visuals: {len(p.images)}")
+
+            # Dynamic Question Generator
+            suggested_questions = DocumentQuestionGenerator.generate_questions(active_unseen_doc, max_questions=4)
+
+            # Auto-reset question input if a new document is loaded
+            if st.session_state.get("last_unseen_id") != active_unseen_doc.doc_id:
+                st.session_state["last_unseen_id"] = active_unseen_doc.doc_id
+                st.session_state["unseen_q_input"] = suggested_questions[0] if suggested_questions else ""
+
+            def apply_unseen_question(q_text: str):
+                st.session_state["unseen_q_input"] = q_text
+
+            st.markdown("---")
+            st.markdown("**Suggested Contextual Questions for this Document (Click to Select):**")
+            s_cols = st.columns(min(len(suggested_questions), 4))
+            for s_idx, sq in enumerate(suggested_questions[:4]):
+                s_cols[s_idx].button(
+                    sq,
+                    key=f"unseen_btn_{active_unseen_doc.doc_id}_{s_idx}",
+                    on_click=apply_unseen_question,
+                    args=(sq,),
+                    use_container_width=True
+                )
+
+            unseen_question = st.text_input(
+                "Enter question regarding this document:",
+                key="unseen_q_input"
+            )
+
+            if st.button("Answer Question & Compare Modalities", type="primary", key="btn_unseen_eval", use_container_width=True):
+                if not unseen_question.strip():
+                    st.warning("Please enter a question.")
+                else:
+                    with st.spinner("Analyzing question, retrieving cross-modal evidence, and comparing modality candidates..."):
+                        # 1. Query Analysis
+                        q_contract = analyzer.analyze(unseen_question)
+
+                        # 2. Retrieval & Fusion
+                        selected_evidence, ranked_pages, _ = retriever.retrieve(unseen_question, q_contract)
+
+                        # 3. Evidence Packet
+                        packet = builder.build_packet(unseen_question, q_contract, selected_evidence)
+
+                        # 4. Grounded Generation & Cross-Modality Selection
+                        generator.provider = resolved_provider
+                        unseen_ans = generator.generate(unseen_question, q_contract, packet)
+
+                        # 5. Validation
+                        val_res = validator.validate(unseen_ans, packet)
+
+                    st.markdown("---")
+
+                    # Adaptive Query Understanding Summary
+                    st.markdown("### Adaptive Query Understanding Contract")
+                    qc1, qc2, qc3, qc4 = st.columns(4)
+                    with qc1:
+                        st.metric("Detected Intent", q_contract.intent.value)
+                    with qc2:
+                        st.metric("Expected Type", q_contract.expected_answer_type)
+                    with qc3:
+                        st.metric("Key Entities", ", ".join(q_contract.key_entities) if q_contract.key_entities else "None")
+                    with qc4:
+                        st.metric("Top Ranked Page", f"Page {ranked_pages[0]}" if ranked_pages else "N/A")
+
+                    # Modality Priors
+                    mw = q_contract.modality_weights
+                    w1, w2, w3 = st.columns(3)
+                    with w1:
+                        st.progress(mw.get("text", 0.33), text=f"Text Weight: {mw.get('text', 0.33):.1%}")
+                    with w2:
+                        st.progress(mw.get("table", 0.33), text=f"Table Weight: {mw.get('table', 0.33):.1%}")
+                    with w3:
+                        st.progress(mw.get("image", 0.33), text=f"Visual Weight: {mw.get('image', 0.33):.1%}")
+
+                    # Cross-Modality Comparison & Selection Matrix (User Req 3)
+                    st.markdown("---")
+                    st.markdown("### Cross-Modality Candidate Evaluation (Selection Matrix)")
+                    st.caption("AQU-MR extracts candidate answers from each available modality and selects the highest scoring grounded candidate:")
+
+                    modality_candidates = unseen_ans.metadata.get("modality_candidates", {})
+                    best_modality = unseen_ans.metadata.get("best_modality", "text")
+                    selection_rationale = unseen_ans.metadata.get("selection_rationale", "")
+
+                    if modality_candidates:
+                        cand_rows = []
+                        for m_key, m_info in modality_candidates.items():
+                            is_winner = (m_key == best_modality)
+                            cand_rows.append({
+                                "Modality": m_key.upper(),
+                                "Candidate Answer": m_info["answer_text"],
+                                "Extraction Confidence": f"{m_info['confidence']:.1%}",
+                                "Modality Weight": f"{m_info['modality_weight']:.1%}",
+                                "Weighted Score": f"{m_info['weighted_score']:.3f}",
+                                "Source Pages": str(m_info["source_pages"]),
+                                "Selection Status": "SELECTED (BEST MODALITY)" if is_winner else "Evaluated"
+                            })
+                        cand_df = pd.DataFrame(cand_rows)
+                        st.dataframe(cand_df, use_container_width=True)
+
+                        st.info(f"**Selection Rationale**: {selection_rationale}")
+                    else:
+                        st.warning("No modality candidate produced verifiable evidence. Clean controlled abstention triggered.")
+
+                    # Winning Grounded Answer Hero Card
+                    st.markdown("### Grounded Winning Answer")
+                    prov_html = " ".join([f'<span class="provenance-tag">Page {p}</span>' for p in unseen_ans.source_pages])
+                    val_class = "validation-pass" if val_res.is_valid else "validation-flag"
+                    val_text = f"Grounding Verified (Score: {val_res.grounding_score:.2f})" if val_res.is_valid else "Grounding Flagged"
+                    best_badge_html = f'<span class="modality-badge modality-badge-winner">BEST MODALITY: {best_modality.upper()}</span>'
+
+                    st.markdown(f"""
+                    <div class="answer-hero">
+                        <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 8px;">
+                            Question: {unseen_question}
+                        </div>
+                        <div style="font-size: 1.35rem; font-weight: 600; color: #38bdf8; margin-bottom: 12px;">
+                            {unseen_ans.answer_text}
+                        </div>
+                        <div style="display:flex; align-items:center; gap: 8px; margin-top: 10px;">
+                            {best_badge_html}
+                            {prov_html}
+                            <span class="validation-badge {val_class}">{val_text}</span>
+                            <span style="font-size: 0.85rem; opacity:0.85;">Confidence: {unseen_ans.confidence:.1%}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.caption(f"Reasoning Trace: {unseen_ans.reasoning_trace}")
+
+                    # Live Unseen Metrics (User Req 4)
+                    st.markdown("### Live Unseen Document Metrics")
+                    u_col1, u_col2, u_col3, u_col4 = st.columns(4)
+                    with u_col1:
+                        st.metric("Chosen Modality", best_modality.upper())
+                    with u_col2:
+                        st.metric("Grounding Score", f"{val_res.grounding_score:.2f}")
+                    with u_col3:
+                        st.metric("Confidence Level", f"{unseen_ans.confidence:.1%}")
+                    with u_col4:
+                        st.metric("Validation Status", "PASSED" if val_res.is_valid else "FLAGGED")
+
+                    # Multimodal Evidence Inspector
+                    st.markdown("### Selected Multimodal Evidence")
+                    ev_tab1, ev_tab2, ev_tab3, ev_tab4 = st.tabs([
+                        "Table Evidence", "Text Evidence", "Visual / Image Evidence", "Raw Evidence Packet"
+                    ])
+
+                    with ev_tab1:
+                        tables_found = [it for it in selected_evidence if it.modality == ModalityType.TABLE]
+                        if tables_found:
+                            for t_it in tables_found:
+                                st.markdown(f"**Page {t_it.page_num} - {t_it.evidence_id}**")
+                                st.markdown(t_it.content)
+                                if "matched_cells" in t_it.provenance_details and t_it.provenance_details["matched_cells"]:
+                                    st.caption(f"Matched Cells: {t_it.provenance_details['matched_cells']}")
+                        else:
+                            st.caption("No table evidence retrieved.")
+
+                    with ev_tab2:
+                        text_found = [it for it in selected_evidence if it.modality == ModalityType.TEXT]
+                        if text_found:
+                            for tx_it in text_found:
+                                st.markdown(f"**Page {tx_it.page_num} - {tx_it.evidence_id} (Score: {tx_it.score:.3f})**")
+                                st.text(tx_it.content)
+                        else:
+                            st.caption("No text evidence retrieved.")
+
+                    with ev_tab3:
+                        img_found = [it for it in selected_evidence if it.modality == ModalityType.IMAGE]
+                        if img_found:
+                            for im_it in img_found:
+                                st.markdown(f"**Page {im_it.page_num} - Visual Context**")
+                                img_path = im_it.provenance_details.get("image_path")
+                                if img_path and os.path.exists(img_path):
+                                    st.image(Image.open(img_path), width=350)
+                                st.caption(f"OCR Context: {im_it.provenance_details.get('ocr_snippet', '')}")
+                        else:
+                            st.caption("No visual evidence retrieved.")
+
+                    with ev_tab4:
+                        st.text(packet.raw_evidence_text)
+        else:
+            st.info("Upload a document above to begin multimodal question answering and cross-modality evaluation.")
+
+    # =========================================================================
+    # TAB 3: SYSTEM ARCHITECTURE & METHODS REFERENCE
+    # =========================================================================
     with tab3:
-        st.subheader("📐 AQU-MR System Architecture")
+        st.subheader("AQU-MR System Architecture & Methodology Reference")
         st.markdown("""
         ### Adaptive Query Understanding and Modality-Aware Retrieval
         
-        The **AQU-MR** system solves multimodal document question answering through an 8-stage decoupled architecture:
+        The **AQU-MR** system implements a decoupled 8-stage architecture for robust, zero-hallucination document question answering:
 
         1. **Dual Ingestion Engine**:
-           - `from_docvqa_images`: Benchmark image-first ingestion with OCR token mapping.
-           - `from_pdf` & `from_image`: Unseen document ingestion synthesizing standard multi-modal pages.
+           - **Benchmark Ingestion**: Image-first ingestion with word-level OCR token coordinates and bounding boxes.
+           - **Unseen Ingestion**: Universal document parser for PDF, DOCX, TXT, and images.
         
         2. **First-Class Modality Processing**:
-           - **Text**: Semantic chunking preserving character coordinates and page boundaries.
-           - **Tables**: Preserves 2D row/column matrices, headers, and cell relationships without flattening.
-           - **Images**: Dual-signal representation (visual spatial embeddings + OCR context).
+           - **Text**: Conservative text cleaning and semantic paragraph/sentence chunking preserving character offsets.
+           - **Tables**: Preserves 2D row/column matrices, headers, and exact cell coordinates without flattening.
+           - **Images**: Dual-signal representation combining visual embeddings with page-level OCR context.
         
         3. **Adaptive Query Understanding (AQU)**:
-           - Automatically classifies query intent (`TABLE_LOOKUP`, `FACT`, `VISUAL`, `COMPARISON`, `LIST`, `SUMMARY`).
+           - Classifies query intent: `TABLE_LOOKUP`, `FACT`, `VISUAL`, `COMPARISON`, `LIST`, `SUMMARY`.
            - Assigns soft, continuous modality routing weights: $(w_{\\text{text}}, w_{\\text{table}}, w_{\\text{image}})$.
         
         4. **Modality-Aware Hybrid Retrieval**:
-           - Text: Hybrid BM25 lexical + dense TF-IDF cosine similarity.
-           - Tables: Structured header and 2D cell coordinate matching.
-           - Images: Union of visual embeddings + OCR context matching.
+           - Text: Hybrid BM25 lexical + dense TF-IDF vector similarity.
+           - Tables: Structured header and cell coordinate matching.
+           - Images: Visual feature alignment + OCR keyword matching.
         
-        5. **Soft Page-Level Fusion**:
-           - Aggregates cross-modal evidence into unified page relevance scores without hard cutoff loss.
+        5. **Cross-Modality Candidate Selection**:
+           - Extracts candidate answers across Text, Table, and Visual modalities.
+           - Evaluates confidence scores, weights them by query intent, and selects the optimal grounded candidate.
         
         6. **Structured Evidence Assembly**:
-           - Packages evidence separated by page and modality within strict evidence token budgets.
+           - Packages cross-modal evidence separated by page and modality within strict token budgets.
         
         7. **Grounded Zero-Hallucination Generation**:
-           - Extractive QA or VLM restricted strictly to provided evidence facts, units, and dates.
+           - Extractive QA or VLM generation restricted strictly to verifiable evidence facts, numbers, and dates.
         
         8. **Rigorous Provenance Validation**:
-           - Verifies entity support, numerical precision, table cell coordinates, and controlled abstention.
+           - Verifies entity support, numerical precision, table coordinates, and enforces controlled abstention.
         """)
 
 

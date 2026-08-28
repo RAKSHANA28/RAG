@@ -93,55 +93,112 @@ class GroundedAnswerGenerator:
         query_tokens = set(re.findall(r'\b\w+\b', query.lower()))
         entities = [e.lower() for e in query_contract.key_entities]
 
-        # Sort modalities by their soft weights
-        image_weight = query_contract.modality_weights.get("image", 0)
-        table_weight = query_contract.modality_weights.get("table", 0)
-        text_weight = query_contract.modality_weights.get("text", 0)
+        image_weight = query_contract.modality_weights.get("image", 0.0)
+        table_weight = query_contract.modality_weights.get("table", 0.0)
+        text_weight = query_contract.modality_weights.get("text", 0.0)
 
         image_items = [it for it in all_items if it.modality == ModalityType.IMAGE]
         table_items = [it for it in all_items if it.modality == ModalityType.TABLE]
         text_items = [it for it in all_items if it.modality == ModalityType.TEXT]
 
-        # 1. Visual modality if intent is VISUAL
-        if image_items and (query_contract.intent == QueryIntent.VISUAL or image_weight > 0.5):
-            best_img_ans = self._extract_image_answer(query, query_tokens, image_items, query_contract)
-            if best_img_ans:
-                return best_img_ans
+        # 1. Extract candidates across all three modalities
+        modality_candidates: Dict[str, Dict[str, Any]] = {}
 
-        # 2. Text modality if query asks "who", or text weight is dominant
-        lower_q = query.lower()
-        if text_items and (lower_q.startswith("who") or "who is" in lower_q or "who are" in lower_q or text_weight > table_weight):
-            best_text_ans = self._extract_text_answer(query, query_tokens, entities, text_items, query_contract)
-            if best_text_ans:
-                return best_text_ans
-
-        # 3. Table modality
+        # Modality A: Table
         if table_items:
-            best_cell_ans = self._extract_table_answer(query, query_tokens, entities, table_items)
-            if best_cell_ans:
-                return best_cell_ans
+            table_ans = self._extract_table_answer(query, query_tokens, entities, table_items)
+            if table_ans:
+                table_score = table_ans.confidence * (table_weight + (0.3 if query_contract.intent == QueryIntent.TABLE_LOOKUP else 0.0))
+                modality_candidates["table"] = {
+                    "modality": "table",
+                    "answer_text": table_ans.answer_text,
+                    "confidence": round(table_ans.confidence, 3),
+                    "modality_weight": round(table_weight, 3),
+                    "weighted_score": round(table_score, 3),
+                    "source_pages": table_ans.source_pages,
+                    "reasoning": table_ans.reasoning_trace,
+                    "answer_obj": table_ans
+                }
 
-        # 4. Fallback to text
+        # Modality B: Text
         if text_items:
-            best_text_ans = self._extract_text_answer(query, query_tokens, entities, text_items, query_contract)
-            if best_text_ans:
-                return best_text_ans
+            text_ans = self._extract_text_answer(query, query_tokens, entities, text_items, query_contract)
+            if text_ans:
+                text_score = text_ans.confidence * (text_weight + (0.2 if query_contract.intent in (QueryIntent.FACT, QueryIntent.SUMMARY, QueryIntent.LIST) else 0.0))
+                modality_candidates["text"] = {
+                    "modality": "text",
+                    "answer_text": text_ans.answer_text,
+                    "confidence": round(text_ans.confidence, 3),
+                    "modality_weight": round(text_weight, 3),
+                    "weighted_score": round(text_score, 3),
+                    "source_pages": text_ans.source_pages,
+                    "reasoning": text_ans.reasoning_trace,
+                    "answer_obj": text_ans
+                }
 
+        # Modality C: Visual / Image
         if image_items:
-            best_img_ans = self._extract_image_answer(query, query_tokens, image_items, query_contract)
-            if best_img_ans:
-                return best_img_ans
+            img_ans = self._extract_image_answer(query, query_tokens, image_items, query_contract)
+            if img_ans:
+                img_score = img_ans.confidence * (image_weight + (0.35 if query_contract.intent == QueryIntent.VISUAL else 0.0))
+                modality_candidates["visual"] = {
+                    "modality": "visual",
+                    "answer_text": img_ans.answer_text,
+                    "confidence": round(img_ans.confidence, 3),
+                    "modality_weight": round(image_weight, 3),
+                    "weighted_score": round(img_score, 3),
+                    "source_pages": img_ans.source_pages,
+                    "reasoning": img_ans.reasoning_trace,
+                    "answer_obj": img_ans
+                }
 
-        return GroundedAnswer(
+        # 2. Select the Best Modality Candidate
+        if modality_candidates:
+            # Sort by weighted score descending
+            sorted_candidates = sorted(
+                modality_candidates.values(),
+                key=lambda x: x["weighted_score"],
+                reverse=True
+            )
+            winning_cand = sorted_candidates[0]
+            winning_answer: GroundedAnswer = winning_cand["answer_obj"]
+            
+            # Attach full cross-modal candidate comparison to metadata
+            clean_candidates = {
+                k: {
+                    "modality": v["modality"],
+                    "answer_text": v["answer_text"],
+                    "confidence": v["confidence"],
+                    "modality_weight": v["modality_weight"],
+                    "weighted_score": v["weighted_score"],
+                    "source_pages": v["source_pages"],
+                    "reasoning": v["reasoning"]
+                }
+                for k, v in modality_candidates.items()
+            }
+            winning_answer.metadata["modality_candidates"] = clean_candidates
+            winning_answer.metadata["best_modality"] = winning_cand["modality"]
+            winning_answer.metadata["selection_rationale"] = (
+                f"Selected {winning_cand['modality'].upper()} modality based on highest weighted grounding score "
+                f"({winning_cand['weighted_score']:.3f}) and query intent '{query_contract.intent.value}'."
+            )
+            return winning_answer
+
+        # 3. Controlled Abstention if no modality found grounded evidence
+        abstention_ans = GroundedAnswer(
             query=query,
             answer_text="Insufficient evidence in document to answer the question.",
             confidence=0.1,
             source_pages=evidence_packet.pages_referenced or [1],
             supporting_evidence=[],
-            reasoning_trace="No exact evidence span matched the query requirements.",
+            reasoning_trace="No exact evidence span matched the query requirements across text, table, or visual modalities.",
             query_contract=query_contract,
             is_abstention=True
         )
+        abstention_ans.metadata["modality_candidates"] = {}
+        abstention_ans.metadata["best_modality"] = "none"
+        abstention_ans.metadata["selection_rationale"] = "All modalities evaluated; insufficient grounded evidence found to answer."
+        return abstention_ans
 
     def _extract_table_answer(
         self,
