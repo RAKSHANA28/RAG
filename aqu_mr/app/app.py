@@ -151,16 +151,39 @@ def main():
         
         provider = st.selectbox(
             "Generation Engine",
-            ["Deterministic Extractive QA (Zero Hallucination)", "Google Gemini VLM", "OpenAI GPT-4o"],
+            [
+                "Groq Llama-3.3-70B (Recommended for Deep Reasoning)",
+                "Deterministic Extractive QA (Zero Hallucination)",
+                "Google Gemini VLM",
+                "OpenAI GPT-4o"
+            ],
             index=0,
-            help="Extractive QA runs locally with zero external API calls. Gemini/OpenAI use API keys if provided."
+            help="Groq Llama-3.3-70B provides deep step-by-step reasoning grounded on evidence. Extractive QA runs locally."
         )
-        resolved_provider = "extractive" if "Deterministic" in provider else ("gemini" if "Gemini" in provider else "openai")
-
-        if resolved_provider == "gemini":
+        
+        if "Groq" in provider:
+            resolved_provider = "groq"
+            groq_key = st.text_input(
+                "Groq API Key",
+                type="password",
+                value=os.environ.get("GROQ_API_KEY", "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"),
+                help="Groq API key for ultra-fast Llama-3.3-70B inference."
+            )
+            if groq_key:
+                os.environ["GROQ_API_KEY"] = groq_key
+                generator.groq_api_key = groq_key
+        elif "Gemini" in provider:
+            resolved_provider = "gemini"
             api_key = st.text_input("Gemini API Key", type="password", value=os.environ.get("GEMINI_API_KEY", ""))
             if api_key:
                 os.environ["GEMINI_API_KEY"] = api_key
+        elif "OpenAI" in provider:
+            resolved_provider = "openai"
+            openai_key = st.text_input("OpenAI API Key", type="password", value=os.environ.get("OPENAI_API_KEY", ""))
+            if openai_key:
+                os.environ["OPENAI_API_KEY"] = openai_key
+        else:
+            resolved_provider = "extractive"
 
         st.markdown("---")
         st.subheader("Modality Retrieval Priors")
@@ -405,49 +428,60 @@ def main():
 
             # Dynamic Question Generator
             suggested_questions = DocumentQuestionGenerator.generate_questions(active_unseen_doc, max_questions=4)
+            q_input_key = f"unseen_q_input_{active_unseen_doc.doc_id}"
 
-            # Manage question state seamlessly
-            if "unseen_question_text" not in st.session_state or st.session_state.get("last_unseen_doc_id") != active_unseen_doc.doc_id:
-                st.session_state["last_unseen_doc_id"] = active_unseen_doc.doc_id
-                st.session_state["unseen_question_text"] = suggested_questions[0] if suggested_questions else ""
+            # Initialize state for this document if not set
+            if q_input_key not in st.session_state:
+                st.session_state[q_input_key] = suggested_questions[0] if suggested_questions else ""
+
+            # Callback for instant 1-click execution
+            def select_and_run_unseen(q_str: str):
+                st.session_state[q_input_key] = q_str
+                st.session_state["execute_unseen_trigger"] = True
 
             st.markdown("---")
-            st.markdown("**Suggested Contextual Questions (Click any question to instantly answer):**")
+            st.markdown("**Suggested Contextual Questions (Click any button to instantly answer):**")
             s_cols = st.columns(min(len(suggested_questions), 4))
-            clicked_question = None
             for s_idx, sq in enumerate(suggested_questions[:4]):
-                if s_cols[s_idx].button(
+                s_cols[s_idx].button(
                     sq,
-                    key=f"unseen_chip_{active_unseen_doc.doc_id}_{s_idx}",
+                    key=f"unseen_btn_chip_{active_unseen_doc.doc_id}_{s_idx}",
+                    on_click=select_and_run_unseen,
+                    args=(sq,),
                     use_container_width=True
-                ):
-                    clicked_question = sq
-                    st.session_state["unseen_question_text"] = sq
+                )
 
-            # Effective question text
-            if clicked_question:
-                active_question = clicked_question
-            else:
-                active_question = st.session_state.get("unseen_question_text", "")
+            # Accessible Dropdown Selector
+            dropdown_options = ["-- Select a suggested question from dropdown --"] + suggested_questions
+            selected_dropdown = st.selectbox(
+                "Or pick a question from the dropdown:",
+                options=dropdown_options,
+                key=f"dropdown_select_{active_unseen_doc.doc_id}"
+            )
+            if selected_dropdown != "-- Select a suggested question from dropdown --":
+                if st.session_state.get(q_input_key) != selected_dropdown:
+                    st.session_state[q_input_key] = selected_dropdown
+                    st.session_state["execute_unseen_trigger"] = True
 
             user_question = st.text_input(
-                "Or enter your custom question regarding this document:",
-                value=active_question,
-                key=f"unseen_text_input_{active_unseen_doc.doc_id}"
+                "Or edit / type your custom question:",
+                key=q_input_key
             )
 
-            # Sync user typing to state
-            if user_question != st.session_state.get("unseen_question_text"):
-                st.session_state["unseen_question_text"] = user_question
+            # Execution trigger: runs on button click or chip selection
+            run_btn_clicked = st.button("Answer Question & Compare Modalities", type="primary", key="btn_unseen_eval", use_container_width=True)
+            should_run_qa = run_btn_clicked or st.session_state.get("execute_unseen_trigger", False)
+            
+            # Reset the execution flag after reading
+            if "execute_unseen_trigger" in st.session_state:
+                del st.session_state["execute_unseen_trigger"]
 
-            effective_question = clicked_question or user_question
-            run_unseen_qa = st.button("Answer Question & Compare Modalities", type="primary", key="btn_unseen_eval", use_container_width=True) or bool(clicked_question)
-
-            if run_unseen_qa:
-                if not effective_question.strip():
+            if should_run_qa:
+                effective_question = user_question.strip()
+                if not effective_question:
                     st.warning("Please enter a question.")
                 else:
-                    with st.spinner("Analyzing question, retrieving cross-modal evidence, and comparing modality candidates..."):
+                    with st.spinner(f"Analyzing question, retrieving cross-modal evidence, and reasoning with {provider}..."):
                         # 1. Query Analysis
                         q_contract = analyzer.analyze(effective_question)
 

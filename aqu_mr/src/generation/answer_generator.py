@@ -50,9 +50,11 @@ class GroundedAnswerGenerator:
         # Determine available provider
         resolved_provider = self._resolve_provider()
 
-        if resolved_provider == "gemini":
+        if self.provider == "groq":
+            return self._generate_groq(query, query_contract, evidence_packet, strict_mode)
+        elif self.provider == "gemini":
             return self._generate_gemini(query, query_contract, evidence_packet, strict_mode)
-        elif resolved_provider == "openai":
+        elif self.provider == "openai":
             return self._generate_openai(query, query_contract, evidence_packet, strict_mode)
         else:
             return self._generate_extractive(query, query_contract, evidence_packet)
@@ -692,6 +694,99 @@ class GroundedAnswerGenerator:
                 )
         except Exception:
             return self._generate_extractive(query, query_contract, evidence_packet)
+
+    def _generate_groq(
+        self,
+        query: str,
+        query_contract: QueryContract,
+        evidence_packet: EvidencePacket,
+        strict_mode: bool = True
+    ) -> GroundedAnswer:
+        """
+        Invokes Groq API (Llama-3.3-70b-versatile) to produce authoritative grounded answers
+        and step-by-step reasoning explaining the exact document evidence and modality provenance.
+        """
+        api_key = os.environ.get("GROQ_API_KEY") or getattr(self, "groq_api_key", None)
+        baseline_ans = self._generate_extractive(query, query_contract, evidence_packet)
+        if not api_key:
+            return baseline_ans
+
+        system_instruction = (
+            "You are AQU-MR (Adaptive Query Understanding & Modality-Aware Retrieval), an expert document question answering AI.\n"
+            "You are provided with a natural language user question and a STRICT MULTIMODAL EVIDENCE PACKET containing Text, Tables, and Visual context extracted from the document.\n\n"
+            "CRITICAL INSTRUCTIONS:\n"
+            "1. Answer ONLY using the facts, table cells, numbers, and text explicitly present in the provided evidence.\n"
+            "2. NEVER extrapolate or hallucinate facts.\n"
+            "3. If the evidence does not contain the answer, reply EXACTLY with: 'Insufficient evidence in document to answer the question.'\n"
+            "4. Provide a detailed, professional, step-by-step 'reasoning_trace' explaining:\n"
+            "   - Exact proof from the evidence packet (source page, table row/column coordinate, or text sentence).\n"
+            "   - Why this specific modality was chosen.\n"
+            "   - Why the answer is factually grounded without ambiguity.\n"
+            "5. Respond in valid JSON format with keys: 'answer', 'confidence' (0.0-1.0), 'source_pages' (list of ints), 'best_modality' ('text'|'table'|'visual'), 'reasoning_trace' (detailed explanation)."
+        )
+
+        user_content = f"{evidence_packet.raw_evidence_text}\n\nUSER QUESTION: {query}"
+        
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_content}
+            ],
+            "temperature": 0.0,
+            "response_format": {"type": "json_object"}
+        }
+
+        try:
+            import ssl, certifi
+            ctx = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            ctx = None
+
+        req = urllib.request.Request(
+            "https://api.groq.com/openai/v1/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "AQU-MR/1.0"
+            }
+        )
+
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=20) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text_out = data["choices"][0]["message"]["content"]
+                parsed = json.loads(text_out)
+                
+                ans_text = parsed.get("answer", "").strip() or baseline_ans.answer_text
+                conf = float(parsed.get("confidence", 0.95))
+                src_pages = parsed.get("source_pages", baseline_ans.source_pages or evidence_packet.pages_referenced or [1])
+                trace = parsed.get("reasoning_trace", "").strip() or baseline_ans.reasoning_trace
+                best_mod = parsed.get("best_modality", baseline_ans.metadata.get("best_modality", "table"))
+                is_abs = "insufficient evidence" in ans_text.lower() or baseline_ans.is_abstention
+
+                all_items = []
+                for itms in evidence_packet.items_by_page.values():
+                    all_items.extend(itms)
+
+                res = GroundedAnswer(
+                    query=query,
+                    answer_text=ans_text,
+                    confidence=conf,
+                    source_pages=src_pages,
+                    supporting_evidence=all_items,
+                    reasoning_trace=trace,
+                    query_contract=query_contract,
+                    raw_model_output=text_out,
+                    is_abstention=is_abs
+                )
+                res.metadata["modality_candidates"] = baseline_ans.metadata.get("modality_candidates", {})
+                res.metadata["best_modality"] = best_mod
+                res.metadata["selection_rationale"] = trace
+                return res
+        except Exception:
+            return baseline_ans
 
     def _generate_openai(
         self,
