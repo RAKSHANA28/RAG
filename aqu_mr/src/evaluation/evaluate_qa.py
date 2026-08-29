@@ -4,6 +4,8 @@ Computes ANLS, Exact Match, F1, Hallucination/Unsupported Claim Rate, and Absten
 with modality-level breakdowns.
 """
 
+import os
+import json
 from typing import List, Dict, Any, Optional
 import numpy as np
 
@@ -113,21 +115,47 @@ class QAEvaluator:
                 "is_valid": val_result.is_valid
             })
 
+        accuracy_scores = [1.0 if s >= 0.5 else 0.0 for s in anls_scores]
         abstention_rate = (correct_abstentions / total_unanswerable) if total_unanswerable > 0 else 1.0
         hallucination_rate = (unsupported_claims_count / len(samples)) if samples else 0.0
 
+        modality_breakdown = {}
+        for m, scores in modality_anls.items():
+            if scores:
+                m_samples = [p for p in predictions_log if p["modality"] == m]
+                m_em = [p["exact_match"] for p in m_samples]
+                modality_breakdown[f"{m.capitalize()}_QA"] = {
+                    "ANLS": round(float(np.mean(scores)), 4),
+                    "Exact_Match": round(float(np.mean(m_em)), 4) if m_em else 0.0,
+                    "Count": len(scores)
+                }
+
         summary = {
+            "evaluation_layer": "aqu_mr/src/evaluation/",
             "dataset": "VLR-CVC/DocVQA-2026",
-            "total_samples": len(samples),
-            "ANLS": round(float(np.mean(anls_scores)), 4) if anls_scores else 0.0,
-            "Exact_Match": round(float(np.mean(em_scores)), 4) if em_scores else 0.0,
-            "F1_Score": round(float(np.mean(f1_scores)), 4) if f1_scores else 0.0,
-            "Hallucination_Rate": round(float(hallucination_rate), 4),
-            "Correct_Abstention_Rate": round(float(abstention_rate), 4),
-            "Modality_ANLS": {
-                m: round(float(np.mean(scores)), 4) if scores else 0.0
-                for m, scores in modality_anls.items() if scores
+            "total_evaluated_samples": len(samples),
+            "metrics": {
+                "ANLS": round(float(np.mean(anls_scores)), 4) if anls_scores else 0.0,
+                "Exact_Match": round(float(np.mean(em_scores)), 4) if em_scores else 0.0,
+                "Accuracy": round(float(np.mean(accuracy_scores)), 4) if accuracy_scores else 0.0,
+                "F1_Score": round(float(np.mean(f1_scores)), 4) if f1_scores else 0.0,
+                "Unsupported_Claim_Rate": round(float(hallucination_rate), 4),
+                "Hallucination_Rate": round(float(hallucination_rate), 4),
+                "Correct_Abstention_Rate": round(float(abstention_rate), 4)
             },
+            "modality_breakdown": modality_breakdown,
             "sample_predictions": predictions_log
         }
+
+        # Save to JSON file
+        out_dir = "data/evaluation"
+        os.makedirs(out_dir, exist_ok=True)
+        json_path = os.path.join(out_dir, "eval_matrix.json")
+        try:
+            import json
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2)
+        except Exception:
+            pass
+
         return summary

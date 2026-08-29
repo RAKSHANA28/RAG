@@ -1,0 +1,306 @@
+{
+  "evaluation_layer": "aqu_mr/src/evaluation/",
+  "dataset": "VLR-CVC/DocVQA-2026",
+  "total_evaluated_samples": 18,
+  "metrics": {
+    "ANLS": 0.8333,
+    "Exact_Match": 0.8333,
+    "Accuracy": 0.8333,
+    "F1_Score": 0.8333,
+    "Unsupported_Claim_Rate": 0.0,
+    "Hallucination_Rate": 0.0,
+    "Correct_Abstention_Rate": 0.6667
+  },
+  "modality_breakdown": {
+    "Text_QA": {
+      "ANLS": 0.8333,
+      "Exact_Match": 0.8333,
+      "Count": 6
+    },
+    "Table_QA": {
+      "ANLS": 0.8889,
+      "Exact_Match": 0.8889,
+      "Count": 9
+    },
+    "Visual_QA": {
+      "ANLS": 0.6667,
+      "Exact_Match": 0.6667,
+      "Count": 3
+    }
+  },
+  "sample_predictions": [
+    {
+      "question_id": "q101",
+      "question": "What was the total revenue in Q3 2025?",
+      "prediction": "$4.82B",
+      "gold_answers": [
+        "$4.82B",
+        "4.82B",
+        "4.82 billion",
+        "$4.82 billion"
+      ],
+      "modality": "table",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q102",
+      "question": "Who is the Chief Financial Officer who signed the audit report?",
+      "prediction": "Marcus Vance",
+      "gold_answers": [
+        "Marcus Vance",
+        "Marcus Vance, CFO",
+        "Vance"
+      ],
+      "modality": "text",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q103",
+      "question": "What is the corporate seal status on page 2?",
+      "prediction": "Verified & Validated",
+      "gold_answers": [
+        "Verified & Validated",
+        "Verified and Validated",
+        "Verified"
+      ],
+      "modality": "visual",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q104",
+      "question": "What was the operating income reported in Q1 2025?",
+      "prediction": "$1.12B",
+      "gold_answers": [
+        "$1.12B",
+        "1.12B",
+        "$1.12 billion"
+      ],
+      "modality": "table",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q105",
+      "question": "Who is the Chief Executive Officer mentioned in executive sign-off?",
+      "prediction": "Elena Rostova",
+      "gold_answers": [
+        "Elena Rostova",
+        "Elena Rostova, CEO",
+        "Elena Rostova Chief Executive Officer"
+      ],
+      "modality": "text",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q106",
+      "question": "What is the projected revenue for the year 2040?",
+      "prediction": "Insufficient evidence in document to answer the question.",
+      "gold_answers": [
+        "Insufficient evidence in document to answer the question.",
+        "unanswerable",
+        "none"
+      ],
+      "modality": "text",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q201",
+      "question": "What is the reported efficacy rate for Cohort B in the Phase 3 trial?",
+      "prediction": "94.6%",
+      "gold_answers": [
+        "94.6%",
+        "94.6 percent",
+        "94.6"
+      ],
+      "modality": "table",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q202",
+      "question": "What color indicates the control group in the clinical trial figure?",
+      "prediction": "Blue",
+      "gold_answers": [
+        "Blue",
+        "Blue bar",
+        "Blue line"
+      ],
+      "modality": "visual",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q203",
+      "question": "How many patients were enrolled in Cohort A?",
+      "prediction": "450",
+      "gold_answers": [
+        "450 patients",
+        "450",
+        "450 enrolled"
+      ],
+      "modality": "table",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q204",
+      "question": "What color indicates the active BMR-902 treatment in Figure 1?",
+      "prediction": "Blue",
+      "gold_answers": [
+        "Green",
+        "Green line",
+        "Green bar"
+      ],
+      "modality": "visual",
+      "anls": 0.0,
+      "exact_match": 0.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q205",
+      "question": "What is the efficacy rate reported for Cohort C Placebo?",
+      "prediction": "18.2%",
+      "gold_answers": [
+        "18.2%",
+        "18.2 percent",
+        "18.2"
+      ],
+      "modality": "table",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q206",
+      "question": "What is the expected release date for Phase 4 commercial production?",
+      "prediction": "BIOMED RESEARCH INSTITUTE - CLINICAL TRIAL REPORT (PHASE 3)",
+      "gold_answers": [
+        "Insufficient evidence in document to answer the question.",
+        "unanswerable",
+        "none"
+      ],
+      "modality": "text",
+      "anls": 0.0,
+      "exact_match": 0.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q301",
+      "question": "What is the final invoice balance due?",
+      "prediction": "$14,250.00",
+      "gold_answers": [
+        "$14,250.00",
+        "$14,250",
+        "14250.00",
+        "14,250"
+      ],
+      "modality": "table",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q302",
+      "question": "What is the payment due date for invoice 88921?",
+      "prediction": "November 15, 2025",
+      "gold_answers": [
+        "November 15, 2025",
+        "15 Nov 2025",
+        "11/15/2025"
+      ],
+      "modality": "text",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q303",
+      "question": "What is the price of Enterprise Cloud Routing Cluster?",
+      "prediction": "$5,000.00",
+      "gold_answers": [
+        "$5,000.00",
+        "$10,000.00",
+        "5000",
+        "$5,000"
+      ],
+      "modality": "table",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q304",
+      "question": "What is the invoice issue date?",
+      "prediction": "October 15, 2025",
+      "gold_answers": [
+        "October 15, 2025",
+        "15 Oct 2025",
+        "10/15/2025"
+      ],
+      "modality": "text",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q305",
+      "question": "What is the item total cost for Dedicated Fiber Backbone Setup?",
+      "prediction": "2",
+      "gold_answers": [
+        "$4,250.00",
+        "$4,250",
+        "4250.00"
+      ],
+      "modality": "table",
+      "anls": 0.0,
+      "exact_match": 0.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    },
+    {
+      "question_id": "q306",
+      "question": "What discount code was applied to this invoice?",
+      "prediction": "Insufficient evidence in document to answer the question.",
+      "gold_answers": [
+        "Insufficient evidence in document to answer the question.",
+        "unanswerable",
+        "none"
+      ],
+      "modality": "table",
+      "anls": 1.0,
+      "exact_match": 1.0,
+      "grounding_score": 1.0,
+      "is_valid": true
+    }
+  ]
+}
