@@ -108,11 +108,16 @@ class TableRetriever:
                             "row_header": row_h
                         })
 
-            # Calculate composite table score
-            cell_hit_score = min(len(matched_cells) * 0.1, 1.0)
-            composite_score = dense_score * 0.5 + (header_overlap * 0.25) + (cell_hit_score * 0.25)
+            # 3. Explicit Table Number Match (e.g. "Table 1", "Table 3")
+            explicit_boost = 0.0
+            t_match = re.search(r'\btable\s+(\d+)\b', query.lower())
+            if t_match:
+                target_t_num = int(t_match.group(1))
+                if (table.title and f"table {target_t_num}" in table.title.lower()) or f"tbl{target_t_num - 1}" in table.table_id:
+                    explicit_boost = 5.0
 
-            scored_tables.append((composite_score, table, matched_cells))
+            total_score = (dense_score * 0.4) + (header_overlap * 0.25) + (max(row_scores, default=0) * 0.15) + explicit_boost
+            scored_tables.append((total_score, table, matched_cells))
 
         # Sort by composite score
         scored_tables.sort(key=lambda x: x[0], reverse=True)

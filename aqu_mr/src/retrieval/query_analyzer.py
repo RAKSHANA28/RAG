@@ -106,7 +106,9 @@ class QueryAnalyzer:
         )
 
     def _detect_intent(self, lower_q: str, words: set, meaningful: set) -> QueryIntent:
-        if words & self.COMPARISON_KEYWORDS or "compare" in lower_q:
+        if any(k in lower_q for k in ["document is about", "document about", "summarize", "overview", "what is this document", "what does this document cover", "what does this document talk about", "main findings", "explain this document"]):
+            return QueryIntent.SUMMARY
+        elif words & self.COMPARISON_KEYWORDS:
             return QueryIntent.COMPARISON
         elif words & self.LIST_KEYWORDS and any(k in lower_q for k in ["what are", "list", "all", "phases", "milestones", "tracks"]):
             return QueryIntent.LIST
@@ -116,8 +118,6 @@ class QueryAnalyzer:
             return QueryIntent.TABLE_LOOKUP
         elif len(words & self.VISUAL_KEYWORDS) >= 1 or any(k in lower_q for k in ["color", "look like", "signature", "diagram", "figure", "seal", "stamp", "logo"]):
             return QueryIntent.VISUAL
-        elif any(lower_q.startswith(w) for w in ["summarize", "overview", "what is this document about"]):
-            return QueryIntent.SUMMARY
         return QueryIntent.FACT
 
     def _compute_modality_weights(self, lower_q: str, words: set, meaningful: set, intent: QueryIntent) -> Dict[str, float]:

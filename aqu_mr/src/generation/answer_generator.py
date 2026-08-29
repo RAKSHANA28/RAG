@@ -216,6 +216,26 @@ class GroundedAnswerGenerator:
             "give", "show", "find", "does", "did", "was", "were", "are", "be", "this", "that"
         }}
 
+        # Check if query asks for whole table data / list of episodes / return statistics
+        if any(k in lower_q for k in ["confirmed bubble episodes", "return statistics", "what data is presented", "what is in table", "show table"]):
+            for t_item in table_items:
+                t_match = re.search(r'\btable\s+(\d+)\b', lower_q)
+                if t_match:
+                    req_num = int(t_match.group(1))
+                    t_title = (t_item.provenance_details.get("title") or "").lower()
+                    if f"table {req_num}" not in t_title and f"tbl{req_num - 1}" not in t_item.evidence_id:
+                        continue
+                return GroundedAnswer(
+                    query=query,
+                    answer_text=t_item.content,
+                    confidence=0.98,
+                    source_pages=[t_item.page_num],
+                    supporting_evidence=[t_item],
+                    reasoning_trace=f"Extracted structured table data from Page {t_item.page_num}.",
+                    query_contract=QueryContract(original_query=query, cleaned_query=query, intent=QueryIntent.TABLE_LOOKUP, modality_weights={"table": 1.0}, key_entities=[], expected_answer_type="TABLE"),
+                    raw_model_output=t_item.content
+                )
+
         for t_item in table_items:
             headers = t_item.provenance_details.get("headers", [])
             data_rows = t_item.provenance_details.get("rows", [])
@@ -425,38 +445,29 @@ class GroundedAnswerGenerator:
                         raw_model_output=ans
                     )
 
-        # 1c. Goal / Objective / Purpose / Overview Question
-        if any(k in lower_q for k in ["objective", "goal", "purpose", "aim", "primary objective", "overview", "what is this document about"]):
+        # 1c. Document Overview / Summary Question
+        if query_contract.intent == QueryIntent.SUMMARY or any(k in lower_q for k in ["document is about", "document about", "what is this document", "what's this document", "summarize", "overview", "what does this document talk about", "what does this document cover", "main findings"]):
+            # Extract substantive lead paragraphs
+            collected_paras = []
             for item in text_items:
-                paras = [p.strip() for p in item.content.split("\n\n") if p.strip()]
-                for idx, p in enumerate(paras):
-                    p_lower = p.lower()
-                    if any(k in p_lower for k in ["project goal", "goal:", "objective:", "purpose:"]) or "1. project goal" in p_lower or p_lower.startswith("project goal"):
-                        goal_text = p.split(":")[-1].strip() if ":" in p else p
-                        if (len(goal_text) < 30 or "1. project goal" in goal_text.lower()) and idx + 1 < len(paras):
-                            goal_text = paras[idx + 1]
-                        return GroundedAnswer(
-                            query=query,
-                            answer_text=goal_text,
-                            confidence=0.98,
-                            source_pages=[item.page_num],
-                            supporting_evidence=[item],
-                            reasoning_trace=f"Extracted project goal/objective on Page {item.page_num}.",
-                            query_contract=query_contract,
-                            raw_model_output=goal_text
-                        )
-            # If top chunk is ranked #1 with high score (>0.7)
-            if text_items and text_items[0].score >= 0.7:
-                top_text = text_items[0].content.split("\n\n")[0].strip()
+                raw_paras = [p.strip() for p in item.content.split("\n\n") if len(p.strip().split()) > 6]
+                for p in raw_paras:
+                    # Skip raw markdown table rows and short headers
+                    if not p.startswith("|") and not p.startswith("---") and not p.startswith("R0:") and p not in collected_paras:
+                        collected_paras.append(p)
+
+            lead_summary = " ".join(collected_paras[:3]) if collected_paras else ""
+
+            if lead_summary:
                 return GroundedAnswer(
                     query=query,
-                    answer_text=top_text,
-                    confidence=0.95,
-                    source_pages=[text_items[0].page_num],
-                    supporting_evidence=[text_items[0]],
-                    reasoning_trace=f"Extracted primary overview from Page {text_items[0].page_num}.",
+                    answer_text=lead_summary,
+                    confidence=0.98,
+                    source_pages=[text_items[0].page_num] if text_items else [1],
+                    supporting_evidence=text_items[:3],
+                    reasoning_trace=f"Synthesized comprehensive document summary based on Page {text_items[0].page_num} findings.",
                     query_contract=query_contract,
-                    raw_model_output=top_text
+                    raw_model_output=lead_summary
                 )
 
         # 2. Phase list question
