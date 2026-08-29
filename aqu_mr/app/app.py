@@ -24,9 +24,7 @@ from src.generation.answer_validator import AnswerValidator
 from src.evaluation.docvqa_loader import DocVQABenchmarkLoader
 from src.evaluation.evaluate_qa import QAEvaluator
 from src.evaluation.evaluate_retrieval import RetrievalEvaluator
-from src.evaluation.metrics import calculate_anls, calculate_exact_match, calculate_f1_score
-from src.utils.schemas import ModalityType, Document, GroundedAnswer
-from src.utils.question_generator import DocumentQuestionGenerator
+from src.utils.schemas import ModalityType, Document
 
 # Streamlit Page Configuration
 st.set_page_config(
@@ -125,13 +123,13 @@ def main():
         provider_choice = st.selectbox(
             "Generation Engine",
             [
-                "Groq Llama-3.3-70B (Recommended)",
-                "Deterministic Extractive QA (Local)",
+                "Deterministic Extractive QA (Local, Zero-Hallucination)",
+                "Groq Llama-3.3-70B (Cloud LLM)",
                 "Google Gemini VLM",
                 "OpenAI GPT-4o"
             ],
             index=0,
-            help="Select the LLM provider for grounded document reasoning."
+            help="Select the generation engine for document reasoning."
         )
 
         if "Groq" in provider_choice:
@@ -140,7 +138,7 @@ def main():
                 "Groq API Key",
                 type="password",
                 value=os.environ.get("GROQ_API_KEY", "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"),
-                help="Groq Cloud API key for ultra-fast Llama-3.3-70B inference."
+                help="Groq Cloud API key."
             )
             if groq_key:
                 os.environ["GROQ_API_KEY"] = groq_key
@@ -240,44 +238,20 @@ def main():
                             st.image(Image.open(p.image_path), use_container_width=True)
                         st.caption(f"Text Chunks: {len(p.text_chunks)} | Tables: {len(p.tables)} | Visuals: {len(p.images)}")
 
-            # Generate Contextual Questions for this Document
-            suggested_questions = DocumentQuestionGenerator.generate_questions(active_doc, max_questions=4)
-
-            # Manage question state cleanly (Never overwrite user typing)
-            if "user_query" not in st.session_state or st.session_state.get("last_doc_loaded") != active_doc.doc_id:
-                st.session_state["last_doc_loaded"] = active_doc.doc_id
-                st.session_state["user_query"] = suggested_questions[0] if suggested_questions else ""
-
-            def apply_suggested(q_str: str):
-                st.session_state["user_query"] = q_str
-
             st.markdown("---")
-            st.markdown("**Suggested Questions for this Document (Click to Select):**")
-            s_cols = st.columns(min(len(suggested_questions), 4))
-            for s_idx, sq in enumerate(suggested_questions[:4]):
-                s_cols[s_idx].button(
-                    sq,
-                    key=f"btn_chip_{active_doc.doc_id}_{s_idx}",
-                    on_click=apply_suggested,
-                    args=(sq,),
-                    use_container_width=True
-                )
+            
+            # Simple, Direct Question Input Box
+            user_question = st.text_input(
+                "Enter your question about this document:",
+                placeholder="e.g. What is this document about? Or ask about any table, value, or topic..."
+            )
+            ask_button = st.button("Ask Question", type="primary")
 
-            # Simple, Natural Form Input (Guarantees typing is never reset)
-            with st.form(key=f"qa_form_{active_doc.doc_id}"):
-                question_input = st.text_input(
-                    "Enter question:",
-                    value=st.session_state.get("user_query", ""),
-                    key="question_input_field"
-                )
-                submit_button = st.form_submit_button("Ask Question", type="primary", use_container_width=True)
-
-            if submit_button:
-                effective_q = question_input.strip()
+            if ask_button or (user_question and user_question.strip()):
+                effective_q = user_question.strip()
                 if not effective_q:
-                    st.warning("Please enter a question.")
+                    st.warning("Please type a question above.")
                 else:
-                    st.session_state["user_query"] = effective_q
                     with st.spinner(f"Retrieving evidence and generating answer with {provider_choice}..."):
                         # 1. Query Analysis
                         q_contract = analyzer.analyze(effective_q)
@@ -288,7 +262,7 @@ def main():
                         # 3. Build Evidence Packet
                         packet = builder.build_packet(effective_q, q_contract, selected_evidence)
 
-                        # 4. Grounded Generation (RAG via Groq Llama-3.3-70B / Extractive)
+                        # 4. Grounded Generation
                         generator.provider = resolved_provider
                         grounded_ans = generator.generate(effective_q, q_contract, packet)
 
@@ -310,8 +284,8 @@ def main():
                         <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 6px;">
                             Question: {effective_q}
                         </div>
-                        <div style="font-size: 1.35rem; font-weight: 600; color: #38bdf8; margin-bottom: 12px;">
-                            {grounded_ans.answer_text}
+                        <div style="font-size: 1.35rem; font-weight: 600; color: #38bdf8; margin-bottom: 12px; white-space: pre-wrap;">
+{grounded_ans.answer_text}
                         </div>
                         <div style="display:flex; align-items:center; gap: 8px;">
                             {mod_tag}
