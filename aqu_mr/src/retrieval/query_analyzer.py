@@ -106,7 +106,7 @@ class QueryAnalyzer:
         )
 
     def _detect_intent(self, lower_q: str, words: set, meaningful: set) -> QueryIntent:
-        if any(k in lower_q for k in ["document is about", "document about", "summarize", "overview", "what is this document", "what does this document cover", "what does this document talk about", "main findings", "explain this document"]):
+        if any(k in lower_q for k in ["takeaway", "takeaways", "findings", "conclusion", "conclusions", "results", "document is about", "document about", "summarize", "overview", "what is this document", "what does this document cover", "what does this document talk about", "main findings", "main points", "explain this document"]):
             return QueryIntent.SUMMARY
         elif words & self.COMPARISON_KEYWORDS:
             return QueryIntent.COMPARISON

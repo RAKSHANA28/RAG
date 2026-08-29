@@ -186,14 +186,49 @@ class GroundedAnswerGenerator:
             )
             return winning_answer
 
-        # 3. Controlled Abstention if no modality found grounded evidence
+        # 3. Robust Semantic Passage Fallback (Prevents unwarranted abstentions for present facts)
+        all_items = []
+        for itms in evidence_packet.items_by_page.values():
+            all_items.extend(itms)
+
+        if all_items:
+            all_items.sort(key=lambda x: x.score, reverse=True)
+            top_item = all_items[0]
+            if top_item.score > 0.05:
+                clean_lines = [l.strip() for l in top_item.content.splitlines() if len(l.strip()) > 10 and not l.strip().startswith("|---")]
+                if clean_lines:
+                    best_line = clean_lines[0]
+                    max_overlap = -1
+                    q_toks = set(query.lower().split())
+                    for l in clean_lines:
+                        ov = len(set(l.lower().split()) & q_toks)
+                        if ov > max_overlap:
+                            max_overlap = ov
+                            best_line = l
+
+                    fallback_ans = GroundedAnswer(
+                        query=query,
+                        answer_text=best_line,
+                        confidence=0.85,
+                        source_pages=[top_item.page_num],
+                        supporting_evidence=[top_item],
+                        reasoning_trace=f"Synthesized answer from Page {top_item.page_num} ({top_item.modality.value.upper()} evidence with retrieval score {top_item.score:.3f}).",
+                        query_contract=query_contract,
+                        raw_model_output=best_line
+                    )
+                    fallback_ans.metadata["modality_candidates"] = {}
+                    fallback_ans.metadata["best_modality"] = top_item.modality.value
+                    fallback_ans.metadata["selection_rationale"] = f"Extracted top passage from Page {top_item.page_num}."
+                    return fallback_ans
+
+        # 4. Controlled Abstention only if document genuinely has no related content
         abstention_ans = GroundedAnswer(
             query=query,
             answer_text="Insufficient evidence in document to answer the question.",
             confidence=0.1,
             source_pages=evidence_packet.pages_referenced or [1],
             supporting_evidence=[],
-            reasoning_trace="No exact evidence span matched the query requirements across text, table, or visual modalities.",
+            reasoning_trace="No relevant evidence span matched the query requirements across text, table, or visual modalities.",
             query_contract=query_contract,
             is_abstention=True
         )
@@ -446,7 +481,7 @@ class GroundedAnswerGenerator:
                     )
 
         # 1c. Document Overview / Summary Question
-        if query_contract.intent == QueryIntent.SUMMARY or any(k in lower_q for k in ["document is about", "document about", "what is this document", "what's this document", "summarize", "overview", "what does this document talk about", "what does this document cover", "main findings"]):
+        if query_contract.intent == QueryIntent.SUMMARY or any(k in lower_q for k in ["takeaway", "takeaways", "findings", "conclusion", "conclusions", "results", "document is about", "document about", "what is this document", "what's this document", "summarize", "overview", "what does this document talk about", "what does this document cover", "main findings", "main points"]):
             # Extract substantive lead paragraphs
             collected_paras = []
             for item in text_items:
@@ -714,29 +749,37 @@ class GroundedAnswerGenerator:
         strict_mode: bool = True
     ) -> GroundedAnswer:
         """
-        Invokes Groq API (Llama-3.3-70b-versatile) to produce authoritative grounded answers
+        Invokes Groq API (Llama-3.3-70b-versatile) to produce natural grounded answers
         and step-by-step reasoning explaining the exact document evidence and modality provenance.
         """
         api_key = os.environ.get("GROQ_API_KEY") or getattr(self, "groq_api_key", None)
         baseline_ans = self._generate_extractive(query, query_contract, evidence_packet)
         if not api_key:
+            self.last_api_status = {
+                "provider": "groq",
+                "status": "warning",
+                "message": "No Groq API Key found. Generated answer using Local Multimodal Synthesizer."
+            }
             return baseline_ans
 
         system_instruction = (
-            "You are AQU-MR (Adaptive Query Understanding & Modality-Aware Retrieval), an expert document question answering AI.\n"
-            "You are provided with a natural language user question and a STRICT MULTIMODAL EVIDENCE PACKET containing Text, Tables, and Visual context extracted from the document.\n\n"
-            "CRITICAL INSTRUCTIONS:\n"
-            "1. Answer ONLY using the facts, table cells, numbers, and text explicitly present in the provided evidence.\n"
-            "2. NEVER extrapolate or hallucinate facts.\n"
-            "3. If the evidence does not contain the answer, reply EXACTLY with: 'Insufficient evidence in document to answer the question.'\n"
-            "4. Provide a detailed, professional, step-by-step 'reasoning_trace' explaining:\n"
-            "   - Exact proof from the evidence packet (source page, table row/column coordinate, or text sentence).\n"
-            "   - Why this specific modality was chosen.\n"
-            "   - Why the answer is factually grounded without ambiguity.\n"
-            "5. Respond in valid JSON format with keys: 'answer', 'confidence' (0.0-1.0), 'source_pages' (list of ints), 'best_modality' ('text'|'table'|'visual'), 'reasoning_trace' (detailed explanation)."
+            "You are AQU-MR, an expert document question answering AI (Multimodal RAG).\n"
+            "You are given a user question and a MULTIMODAL EVIDENCE PACKET containing Text, Tables, and Visual context extracted from the document.\n\n"
+            "INSTRUCTIONS:\n"
+            "1. Answer the user's question clearly, intelligently, and thoroughly based STRICTLY on the facts, tables, numbers, and text in the evidence packet.\n"
+            "2. For comparison or summary questions, synthesize a comprehensive, well-structured explanation comparing the relevant entities/data.\n"
+            "3. If table data is relevant, cite the specific numbers, columns, and rows accurately.\n"
+            "4. NEVER hallucinate facts outside the provided document evidence.\n"
+            "5. If the evidence does not contain the answer, state: 'Insufficient evidence in document to answer the question.'\n"
+            "6. Output your response as a valid JSON object with keys:\n"
+            "   - 'answer': A clear, complete, well-reasoned answer to the user's question.\n"
+            "   - 'confidence': float between 0.0 and 1.0\n"
+            "   - 'source_pages': list of page numbers (integers)\n"
+            "   - 'best_modality': 'text' | 'table' | 'visual'\n"
+            "   - 'reasoning_trace': Step-by-step explanation citing exact pages, rows, columns, or text sentences."
         )
 
-        user_content = f"{evidence_packet.raw_evidence_text}\n\nUSER QUESTION: {query}"
+        user_content = f"--- EXTRACTED MULTIMODAL EVIDENCE ---\n{evidence_packet.raw_evidence_text}\n\nUSER QUESTION: {query}"
         
         payload = {
             "model": "llama-3.3-70b-versatile",
@@ -744,7 +787,7 @@ class GroundedAnswerGenerator:
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_content}
             ],
-            "temperature": 0.0,
+            "temperature": 0.1,
             "response_format": {"type": "json_object"}
         }
 
@@ -775,11 +818,17 @@ class GroundedAnswerGenerator:
                 src_pages = parsed.get("source_pages", baseline_ans.source_pages or evidence_packet.pages_referenced or [1])
                 trace = parsed.get("reasoning_trace", "").strip() or baseline_ans.reasoning_trace
                 best_mod = parsed.get("best_modality", baseline_ans.metadata.get("best_modality", "table"))
-                is_abs = "insufficient evidence" in ans_text.lower() or baseline_ans.is_abstention
+                is_abs = "insufficient evidence" in ans_text.lower()
 
                 all_items = []
                 for itms in evidence_packet.items_by_page.values():
                     all_items.extend(itms)
+
+                self.last_api_status = {
+                    "provider": "groq",
+                    "status": "success",
+                    "message": "Answer and reasoning generated via Groq Cloud LLM (Llama-3.3-70B)."
+                }
 
                 res = GroundedAnswer(
                     query=query,
@@ -796,7 +845,27 @@ class GroundedAnswerGenerator:
                 res.metadata["best_modality"] = best_mod
                 res.metadata["selection_rationale"] = trace
                 return res
-        except Exception:
+        except urllib.error.HTTPError as e:
+            err_msg = f"Groq API Error {e.code}: {e.reason}"
+            try:
+                err_body = json.loads(e.read().decode("utf-8"))
+                if "error" in err_body and "message" in err_body["error"]:
+                    err_msg += f" - {err_body['error']['message']}"
+            except Exception:
+                pass
+
+            self.last_api_status = {
+                "provider": "groq",
+                "status": "error",
+                "message": f"{err_msg}. (Using Local Multimodal Synthesizer as fallback)."
+            }
+            return baseline_ans
+        except Exception as e:
+            self.last_api_status = {
+                "provider": "groq",
+                "status": "error",
+                "message": f"Groq connection error: {e}. (Using Local Multimodal Synthesizer as fallback)."
+            }
             return baseline_ans
 
     def _generate_openai(

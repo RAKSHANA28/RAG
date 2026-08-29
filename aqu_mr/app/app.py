@@ -269,6 +269,16 @@ def main():
                         # 5. Validation
                         val_res = validator.validate(grounded_ans, packet)
 
+                    # Display API Status Notification if applicable
+                    api_status = getattr(generator, "last_api_status", None)
+                    if api_status:
+                        if api_status.get("status") == "success":
+                            st.success(f"Generation Mode: {api_status.get('message')}")
+                        elif api_status.get("status") == "error":
+                            st.warning(f"API Notice: {api_status.get('message')}")
+                        elif api_status.get("status") == "warning":
+                            st.info(f"Mode Notice: {api_status.get('message')}")
+
                     # Display Grounded Answer Card
                     st.markdown("---")
                     st.markdown("### Grounded Answer")
@@ -284,8 +294,8 @@ def main():
                         <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 6px;">
                             Question: {effective_q}
                         </div>
-                        <div style="font-size: 1.35rem; font-weight: 600; color: #38bdf8; margin-bottom: 12px; white-space: pre-wrap;">
-{grounded_ans.answer_text}
+                        <div style="font-size: 1.25rem; font-weight: 600; color: #38bdf8; margin-bottom: 12px; line-height: 1.5;">
+                            {grounded_ans.answer_text}
                         </div>
                         <div style="display:flex; align-items:center; gap: 8px;">
                             {mod_tag}
